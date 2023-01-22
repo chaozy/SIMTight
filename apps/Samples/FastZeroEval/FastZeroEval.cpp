@@ -3,17 +3,6 @@
 #include <FastZero.h>
 #include <Pebbles/CSRs/CycleCount.h>
 
-
-
-int is_empty(char *mem, uint32_t size) 
-{
-  for (int i = 0; i < size; i++) 
-  {
-    if (mem[i]) return 0;
-  }
-  return 1;
-}
-
 struct VecZero : Kernel {
   int size;
   char *b;
@@ -24,11 +13,11 @@ struct VecZero : Kernel {
   }
 };
 
-void fastZeroByLoop(char *mem, uint32_t size) 
+void zeroByLoop(char *mem, uint32_t size) 
 {
   for (int i = 0; i < size; i++) 
   {
-    mem[0] = 0;
+    mem[i] = 0;
   }
 }
 
@@ -45,9 +34,10 @@ int main()
     c[i] = 'c';
   }
 
-  pebblesCycleCountL(); // zero the current cycleCount
-  fastZeroByLoop(c, N);  
-  uint32_t cycleCount = pebblesCycleCountL();
+  uint32_t cycleCount = pebblesCycleCountL(); // zero the current cycleCount
+  puts("zero by loop - cycle count: "); puthex(cycleCount); putchar('\n');
+  zeroByLoop(c, N);  
+  cycleCount = pebblesCycleCountL();
   puts("zero by loop - cycle count: "); puthex(cycleCount); putchar('\n');
   printStat("Total DRAM Access: ", STAT_SIMT_TOTAL_DRAM_ACCESSES);
 
@@ -71,21 +61,14 @@ int main()
 
 
   bool flag = 0;
-  bool f1 =0, f2 = 0, f3 = 0;
   for (int i = 0; i < N; i++) 
   {
     if (a[i] || b[i] || c[i]) 
     {
       flag = 1;
-      f1 = a[i];
-      f2 = b[i];
-      f3 = c[i];
       break;
     }
   }
-  puthex(f1);
-  puthex(f2);
-  puthex(f3);
   if (flag) puts("A method is not fully zeroing its memory\n");
   else puts("All methods successfully zero the corresponding memory\n");
   
