@@ -278,9 +278,9 @@ template <typename K> __attribute__ ((noinline))
     _noclSIMTMain_<K>();
   }
 
-// Trigger SIMT kernel execution from CPU
 template <typename K> __attribute__ ((noinline))
-  int noclRunKernel(K* k) {
+  void noclKernelMapping(K* k) 
+  {
     unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     unsigned threadsUsed = threadsPerBlock * k->gridDim.x * k->gridDim.y;
 
@@ -333,10 +333,14 @@ template <typename K> __attribute__ ((noinline))
     unsigned blocksPerSM = (SIMTWarps * SIMTLanes) / threadsPerBlock;
     unsigned localBytes = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
-
     // End of mapping
-    // --------------
 
+  }
+
+template <typename K> __attribute__((noinline))
+  int noclTriggerKernel(K* k)
+  {
+    unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     // Set number of warps per block
     // (for fine-grained barrier synchronisation)
     unsigned warpsPerBlock = threadsPerBlock >> SIMTLogLanes;
@@ -368,6 +372,16 @@ template <typename K> __attribute__ ((noinline))
     // Wait for kernel response
     while (!pebblesSIMTCanGet()) {}
     return pebblesSIMTGet();
+  }
+
+// Trigger SIMT kernel execution from CPU
+template <typename K> __attribute__ ((noinline))
+  int noclRunKernel(K* k) {
+    
+    noclKernelMapping(k);
+    return noclTriggerKernel(k);
+
+    
   }
 
 // Ask SIMT core for given performance stat
