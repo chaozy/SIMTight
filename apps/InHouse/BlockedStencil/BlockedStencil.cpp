@@ -9,6 +9,7 @@
 
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 #define DEBUG false
 
@@ -115,6 +116,10 @@ int main() {
   simt_aligned int in_buf[buf_size];
   simt_aligned int out_buf[buf_size];
   int golden_out_buf[buf_size];
+
+  // Fast zero the memory blocks             
+  fastZero(in_buf, buf_size * sizeof(int));
+  fastZero(out_buf, buf_size * sizeof(int));
 
   // Prepare buffers
   // Zero out the ouput buffer. This makes it easier to spot bugs.

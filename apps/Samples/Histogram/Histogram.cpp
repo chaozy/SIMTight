@@ -1,5 +1,6 @@
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 // Kernel for computing 256-bin histograms
 struct Histogram : Kernel {
@@ -36,11 +37,15 @@ int main()
   bool isSim = getchar();
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 1000000;
+  int N = isSim ? 64 * 100 : 1000000;
 
   // Input and output vectors
   nocl_aligned unsigned char input[N];
   nocl_aligned int bins[256];
+
+  // fast zero the blocks of memory
+  fastZero(input, N * sizeof(unsigned char));
+  fastZero(input, 256 * sizeof(int));
 
   // Initialise inputs
   uint32_t seed = 1;

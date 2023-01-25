@@ -3,6 +3,7 @@
 
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 // Kernel for sparse matrix vector multipliation on ELLPACK format
 // One thread per matrix row
@@ -49,6 +50,13 @@ int main()
                    dataT[samplesPerRow * height],
                    indicesT[samplesPerRow * height],
                    vecIn[width*2], vecOut[height];
+  // fast zero the blocks of memory
+  fastZero(data, samplesPerRow * height * sizeof(int));
+  fastZero(indices, samplesPerRow * height * sizeof(int));            
+  fastZero(dataT, samplesPerRow * height * sizeof(int)); 
+  fastZero(indicesT, samplesPerRow * height * sizeof(int)); 
+  fastZero(vecIn, width * 2 * sizeof(int));  
+  fastZero(vecOut, height * sizeof(int)); 
 
   // Initialise inputs
   uint32_t seed = 1;

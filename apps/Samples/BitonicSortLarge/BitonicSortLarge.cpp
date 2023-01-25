@@ -10,6 +10,7 @@
 
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 // Size of arrays being sorted
 #define LOCAL_SIZE_LIMIT 4096
@@ -193,6 +194,17 @@ int main()
   // Input and output vectors
   simt_aligned unsigned srcKeys[N], srcVals[N];
   simt_aligned unsigned dstKeys[N], dstVals[N];
+
+  // fast zero the blocks of memory
+  puts("Start fast zeroing \n");
+  fastZero(srcKeys, N * sizeof(unsigned)); 
+  puts("finish srcKeys zeroing \n");
+  fastZero(srcVals, N * sizeof(unsigned));
+  puts("finish srcVals zeroing \n");
+  fastZero(dstKeys, N * sizeof(unsigned));
+  puts("finish dstKeys zeroing \n");
+  fastZero(dstVals, N * sizeof(unsigned));
+  puts("finish zeroing \n");
 
   // Initialise inputs
   uint32_t seed = 1;

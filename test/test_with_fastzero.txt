@@ -1,0 +1,124 @@
+SIMTight build: [0;32mok[0m
+Simulator build: [0;32mok[0m
+Starting simulator: [0;32mok[0m
+
+Test Suite (CPU, Simulation)
+============================
+
+  I/add                   ok
+  I/addi                  ok
+  I/and                   ok
+  I/andi                  ok
+  I/beq                   ok
+  I/bge                   ok
+  I/bgeu                  ok
+  I/blt                   ok
+  I/bltu                  ok
+  I/bne                   ok
+  I/lui                   ok
+  I/or                    ok
+  I/ori                   ok
+  I/simple                ok
+  I/sll                   ok
+  I/slli                  ok
+  I/slt                   ok
+  I/slti                  ok
+  I/sltiu                 ok
+  I/sltu                  ok
+  I/sra                   ok
+  I/srai                  ok
+  I/srl                   ok
+  I/srli                  ok
+  I/sub                   ok
+  I/xor                   ok
+  I/xori                  ok
+  I/NoCap/auipc           ok
+  I/NoCap/jal             ok
+  I/NoCap/jalr            ok
+  I/NoCap/lb              ok
+  I/NoCap/lbu             ok
+  I/NoCap/lh              ok
+  I/NoCap/lhu             ok
+  I/NoCap/lw              ok
+  I/NoCap/sb              ok
+  I/NoCap/sh              ok
+  I/NoCap/sw              ok
+  M/div                   ok
+  M/divu                  ok
+  M/mul                   ok
+  M/mulh                  ok
+  M/mulhsu                ok
+  M/mulhu                 ok
+  M/rem                   ok
+  M/remu                  ok
+
+Summary: [0;32mok[0m
+
+Test Suite (SIMT Core, Simulation)
+==================================
+
+  I/add                   ok
+  I/addi                  ok
+  I/and                   ok
+  I/andi                  ok
+  I/beq                   ok
+  I/bge                   ok
+  I/bgeu                  ok
+  I/blt                   ok
+  I/bltu                  ok
+  I/bne                   ok
+  I/lui                   ok
+  I/or                    ok
+  I/ori                   ok
+  I/simple                ok
+  I/sll                   ok
+  I/slli                  ok
+  I/slt                   ok
+  I/slti                  ok
+  I/sltiu                 ok
+  I/sltu                  ok
+  I/sra                   ok
+  I/srai                  ok
+  I/srl                   ok
+  I/srli                  ok
+  I/sub                   ok
+  I/xor                   ok
+  I/xori                  ok
+  I/NoCap/auipc           ok
+  I/NoCap/jal             ok
+  I/NoCap/jalr            ok
+  I/NoCap/lb              ok
+  I/NoCap/lbu             ok
+  I/NoCap/lh              ok
+  I/NoCap/lhu             ok
+  I/NoCap/lw              ok
+  I/NoCap/sb              ok
+  I/NoCap/sh              ok
+  I/NoCap/sw              ok
+  M/div                   ok
+  M/divu                  ok
+  M/mul                   ok
+  M/mulh                  ok
+  M/mulhsu                ok
+  M/mulhu                 ok
+  M/rem                   ok
+  M/remu                  ok
+  A/amoadd_w              ok
+  A/amoand_w              ok
+  A/amomax_w              ok
+  A/amomaxu_w             ok
+  A/amomin_w              ok
+  A/amominu_w             ok
+  A/amoor_w               ok
+  A/amoswap_w             ok
+  A/amoxor_w              ok
+
+Summary: [0;32mok[0m
+
+Apps (Simulation)
+=================
+
+(NOTE: simulation stats can be misleading due to tiny workloads)
+
+Samples/VecAdd (build): [0;32mok[0m
+Samples/VecAdd (run): 

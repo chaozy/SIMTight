@@ -1,5 +1,6 @@
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 // Kernel for adding vectors
 struct VecAdd : Kernel {
@@ -18,10 +19,21 @@ int main()
   bool isSim = getchar();
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 1000000;
+  int N = isSim ? 64 * 100  : 1000000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], result[N];
+  
+  // fast zero the memory blocks
+  puts("Start fast zeroing \n");
+  fastZero(a, N * sizeof(int));
+  puts("Finish a zeroing \n");
+
+  fastZero(b, N * sizeof(int));
+  puts("Finish b zeroing \n");
+
+  fastZero(result, N * sizeof(int));
+  puts("Finish fast zeroing \n");
 
   // Initialise inputs
   uint32_t seed = 1;

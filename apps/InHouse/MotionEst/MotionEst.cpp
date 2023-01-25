@@ -1,5 +1,6 @@
 #include <NoCL.h>
 #include <Rand.h>
+#include <FastZero.h>
 
 // Search radius in pixels
 // Must be less than SIMTLanes
@@ -118,6 +119,11 @@ int main() {
   nocl_aligned unsigned currentFrame[width*height],
                         prevFrame[width*height],
                         sads[numOutputs];
+
+  // Fast zero the memory blocks             
+  fastZero(currentFrame, width * height * sizeof(unsigned));
+  fastZero(prevFrame, width * height * sizeof(unsigned));
+  fastZero(sads, numOutputs * sizeof(unsigned));
 
   // Prepare inputs
   uint32_t seed = 1;
