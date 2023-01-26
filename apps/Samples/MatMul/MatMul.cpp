@@ -121,10 +121,10 @@ int main()
                    matC[size*size], matCheck[size*size];
   
   // Fast zero the memory blocks                 
-  fastZero(matA, size * size * sizeof(int));
-  fastZero(matB, size * size * sizeof(int));
-  fastZero(matC, size * size * sizeof(int));
-  fastZero(matCheck, size * size * sizeof(int));
+  // fastZero(matA, size * size * sizeof(int));
+  // fastZero(matB, size * size * sizeof(int));
+  // fastZero(matC, size * size * sizeof(int));
+  // fastZero(matCheck, size * size * sizeof(int));
 
   // Initialise matrices
   uint32_t seed = 1;

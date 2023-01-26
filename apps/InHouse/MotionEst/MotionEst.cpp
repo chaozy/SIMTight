@@ -123,7 +123,6 @@ int main() {
   // Fast zero the memory blocks             
   fastZero(currentFrame, width * height * sizeof(unsigned));
   fastZero(prevFrame, width * height * sizeof(unsigned));
-  fastZero(sads, numOutputs * sizeof(unsigned));
 
   // Prepare inputs
   uint32_t seed = 1;

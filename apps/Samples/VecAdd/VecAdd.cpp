@@ -25,15 +25,10 @@ int main()
   simt_aligned int a[N], b[N], result[N];
   
   // fast zero the memory blocks
-  puts("Start fast zeroing \n");
-  fastZero(a, N * sizeof(int));
-  puts("Finish a zeroing \n");
 
-  fastZero(b, N * sizeof(int));
-  puts("Finish b zeroing \n");
-
-  fastZero(result, N * sizeof(int));
-  puts("Finish fast zeroing \n");
+  // fastZero(a, N * sizeof(int));
+  // fastZero(b, N * sizeof(int));
+  // fastZero(result, N * sizeof(int));
 
   // Initialise inputs
   uint32_t seed = 1;
