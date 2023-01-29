@@ -191,6 +191,9 @@ struct Kernel {
 
   // Mapping between SIMT threads and CUDA thread/block indices
   KernelMapping map;
+
+  // Entry address of the kernel
+  uint32_t entryAddr;
 };
 
 // Kernel invocation
@@ -279,7 +282,7 @@ template <typename K> __attribute__ ((noinline))
   }
 
 template <typename K> __attribute__ ((noinline))
-  void noclKernelMapping(K* k) 
+  void noclMappingKernel(K* k) 
   {
     unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     unsigned threadsUsed = threadsPerBlock * k->gridDim.x * k->gridDim.y;
@@ -335,10 +338,16 @@ template <typename K> __attribute__ ((noinline))
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
     // End of mapping
 
+    // Compute the address of the entry point
+    #if EnableCHERI
+      void (*entryFun)() = _noclSIMTEntry_<K>;
+      k->entryAddr = cheri_address_get(entryFun);
+    #else
+      k->entryAddr = (uint32_t) _noclSIMTEntry_<K>;
+    #endif
   }
 
-template <typename K> __attribute__((noinline))
-  int noclTriggerKernel(K* k)
+ __attribute__((noinline)) int noclTriggerKernel(Kernel* k)
   {
     unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     // Set number of warps per block
@@ -360,12 +369,7 @@ template <typename K> __attribute__((noinline))
     pebblesCacheFlushFull();
 
     // Start kernel on SIMT core
-    #if EnableCHERI
-      void (*entryFun)() = _noclSIMTEntry_<K>;
-      uint32_t entryAddr = cheri_address_get(entryFun);
-    #else
-      uint32_t entryAddr = (uint32_t) _noclSIMTEntry_<K>;
-    #endif
+    uint32_t entryAddr = k->entryAddr;
     while (!pebblesSIMTCanPut()) {}
     pebblesSIMTStartKernel(entryAddr);
 
@@ -378,10 +382,9 @@ template <typename K> __attribute__((noinline))
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
     
-    noclKernelMapping(k);
+    noclMappingKernel(k);
     return noclTriggerKernel(k);
 
-    
   }
 
 // Ask SIMT core for given performance stat
