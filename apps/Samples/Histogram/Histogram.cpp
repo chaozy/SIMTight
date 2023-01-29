@@ -44,8 +44,10 @@ int main()
   nocl_aligned int bins[256];
 
   // fast zero the blocks of memory
-  // fastZero(input, N * sizeof(unsigned char));
-  // fastZero(input, 256 * sizeof(int));
+  #if EnableFastZeroing
+  fastZero(input, N * sizeof(unsigned char));
+  fastZero(input, 256 * sizeof(int));
+  #endif
 
   // Initialise inputs
   uint32_t seed = 1;

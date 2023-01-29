@@ -120,11 +120,13 @@ int main()
   simt_aligned int matA[size*size], matB[size*size],
                    matC[size*size], matCheck[size*size];
   
-  // Fast zero the memory blocks                 
-  // fastZero(matA, size * size * sizeof(int));
-  // fastZero(matB, size * size * sizeof(int));
-  // fastZero(matC, size * size * sizeof(int));
-  // fastZero(matCheck, size * size * sizeof(int));
+  // Fast zero the memory blocks  
+  #if EnableFastZeroing               
+  fastZero(matA, size * size * sizeof(int));
+  fastZero(matB, size * size * sizeof(int));
+  fastZero(matC, size * size * sizeof(int));
+  fastZero(matCheck, size * size * sizeof(int));
+  #endif
 
   // Initialise matrices
   uint32_t seed = 1;

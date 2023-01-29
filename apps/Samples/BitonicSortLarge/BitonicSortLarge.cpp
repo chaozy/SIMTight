@@ -196,10 +196,12 @@ int main()
   simt_aligned unsigned dstKeys[N], dstVals[N];
 
   // fast zero the blocks of memory
-  // fastZero(srcKeys, N * sizeof(unsigned)); 
-  // fastZero(srcVals, N * sizeof(unsigned));
-  // fastZero(dstKeys, N * sizeof(unsigned));
-  // fastZero(dstVals, N * sizeof(unsigned));
+  #if EnableFastZeroing
+  fastZero(srcKeys, N * sizeof(unsigned)); 
+  fastZero(srcVals, N * sizeof(unsigned));
+  fastZero(dstKeys, N * sizeof(unsigned));
+  fastZero(dstVals, N * sizeof(unsigned));
+  #endif
 
   // Initialise inputs
   uint32_t seed = 1;

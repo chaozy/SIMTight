@@ -25,10 +25,23 @@ int main()
   simt_aligned int a[N], b[N], result[N];
   
   // fast zero the memory blocks
+  #if EnableFastZeroing
+  fastZero(a, N * sizeof(int));
+  fastZero(b, N * sizeof(int));
+  fastZero(result, N * sizeof(int));
+  #endif 
 
-  // fastZero(a, N * sizeof(int));
-  // fastZero(b, N * sizeof(int));
-  // fastZero(result, N * sizeof(int));
+  bool flag = 0;
+  for (int i = 0; i < N; i++) 
+  {
+    if (a[i]) 
+    {
+      flag = 1;
+      break;
+    }
+  }
+  if (flag) puts("A method is not fully zeroing its memory\n");
+  else puts("All methods successfully zero the corresponding memory\n");
 
   // Initialise inputs
   uint32_t seed = 1;

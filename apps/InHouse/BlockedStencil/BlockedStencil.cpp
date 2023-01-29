@@ -117,9 +117,11 @@ int main() {
   simt_aligned int out_buf[buf_size];
   int golden_out_buf[buf_size];
 
-  // Fast zero the memory blocks             
+  // Fast zero the memory blocks    
+  #if EnableFastZeroing         
   fastZero(in_buf, buf_size * sizeof(int));
   fastZero(out_buf, buf_size * sizeof(int));
+  #endif
 
   // Prepare buffers
   // Zero out the ouput buffer. This makes it easier to spot bugs.

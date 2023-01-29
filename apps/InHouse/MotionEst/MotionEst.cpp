@@ -120,9 +120,11 @@ int main() {
                         prevFrame[width*height],
                         sads[numOutputs];
 
-  // Fast zero the memory blocks             
+  // Fast zero the memory blocks    
+  #if EnableFastZeroing         
   fastZero(currentFrame, width * height * sizeof(unsigned));
   fastZero(prevFrame, width * height * sizeof(unsigned));
+  #endif
 
   // Prepare inputs
   uint32_t seed = 1;
