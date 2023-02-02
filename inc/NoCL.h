@@ -196,6 +196,65 @@ struct Kernel {
   uint32_t entryAddr;
 };
 
+struct Node {
+  
+  Kernel *k;
+
+  // The pointer to next node
+  Node* nextNode;
+};
+
+class Queue 
+{
+  public:
+  	Node *front;
+  	Node *rear;
+  	
+    Queue() 
+	  {
+      front = 0;
+      rear = 0;
+    }
+    
+    bool isEmpty()
+    {
+    	if(!front && !rear)
+    		return true;
+		  else
+			  return false;
+	  }
+	 
+    void enqueue(Kernel *n) 
+    {
+      Node newNode;
+      newNode.k = n;
+      if (isEmpty())
+      {
+        front = &newNode;
+        rear = &newNode;
+      }
+      else
+      {
+        rear->nextNode = &newNode;
+        rear = &newNode;
+      }
+    }
+	
+	void dequeue() 
+    {
+      if (!isEmpty())  
+      {
+        if(front == rear)
+        {
+          front = 0;
+          rear = 0;  
+        }
+        else
+          front = front -> nextNode;            
+      }
+    }
+};
+
 // Kernel invocation
 // =================
 
@@ -444,6 +503,15 @@ template <typename K> __attribute__ ((noinline))
 
     return ret;
   }
+
+// // Tempoary method that checks the implementation of queue
+// __attribute__ ((noinline)) void noclRunQueueAndDumpStats(Queue* queue) {
+//   while (!queue->isEmpty())
+//   {
+//     noclRunKernelAndDumpStats(&(queue->front->k));
+//     queue->dequeue();
+//   }
+// }
 
 // Explicit convergence
 INLINE void noclPush() { pebblesSIMTPush(); }
