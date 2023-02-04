@@ -68,12 +68,12 @@ int main()
   }
 
   // Instantiate VecAdd
-  VecAdd k1;
-  k1.blockDim.x = SIMTWarps * SIMTLanes;
-  k1.len = N;
-  k1.a = a;
-  k1.b = b;
-  k1.result = result;
+  VecAdd kernel1;
+  kernel1.blockDim.x = SIMTWarps * SIMTLanes;
+  kernel1.len = N;
+  kernel1.a = a;
+  kernel1.b = b;
+  kernel1.result = result;
 
   // Instantiate Reduce 
   simt_aligned int in[N];
@@ -84,29 +84,28 @@ int main()
     in[i] = r;
     acc += r;
   }
-  Reduce<SIMTWarps * SIMTLanes> k2;
-  k2.blockDim.x = SIMTWarps * SIMTLanes;
+  Reduce<SIMTWarps * SIMTLanes> kernel2;
+  kernel2.blockDim.x = SIMTWarps * SIMTLanes;
+  kernel2.len = N;
+  kernel2.in = in;
+  kernel2.sum = &sum;
 
-  // Assign parameters
-  k2.len = N;
-  k2.in = in;
-  k2.sum = &sum;
-
-  // Input and output vectors
+  // Instantiate Histogram
   nocl_aligned unsigned char input[N];
   nocl_aligned int bins[256];
   for (int i = 0; i < N; i++)
     input[i] = rand15(&seed) & 0xff;
-  Histogram k3;
-  k3.blockDim.x = SIMTLanes * SIMTWarps;
-  k3.len = N;
-  k3.input = input;
-  k3.bins = bins;
+  Histogram kernel3;
+  kernel3.blockDim.x = SIMTLanes * SIMTWarps;
+  kernel3.len = N;
+  kernel3.input = input;
+  kernel3.bins = bins;
 
-  Queue queue;
-  queue.enqueue(&k1); queue.enqueue(&k2); queue.enqueue(&k3);
-  // noclRunQueueAndDumpStats(&queue);
-  noclRunKernelAndDumpStats(&k1);
+  Kernel *kernels[] = {&kernel1, &kernel2, &kernel3};
+  KernelQueue<Kernel> queue(kernels, 3);
+  
+  noclRunQueueAndDumpStats(&queue);
+  // noclRunKernelAndDumpStats(&queue);
 
   // Invoke kernel
   // noclRunKernelAndDumpStats(&k2);

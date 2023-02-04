@@ -196,63 +196,68 @@ struct Kernel {
   uint32_t entryAddr;
 };
 
-struct Node {
-  
-  Kernel *k;
+// template <class K> 
+// struct Node {
+//   K *k;
 
-  // The pointer to next node
-  Node* nextNode;
-};
+//   // The pointer to next node
+//   Node *nextNode;
 
-class Queue 
+//   Node(K *kernel): k(kernel)
+//   {}
+// };
+
+template <class K>
+class KernelQueue 
 {
   public:
-  	Node *front;
-  	Node *rear;
+    int idx;
+    int len;
+    K *nodes[];
+
   	
-    Queue() 
+    KernelQueue(K *nodes[], int leng) 
 	  {
-      front = 0;
-      rear = 0;
+      nodes = nodes;
+      idx = 0; len = leng;
     }
-    
-    bool isEmpty()
+
+    // Move the head to the next Node
+    K* next() 
     {
-    	if(!front && !rear)
-    		return true;
-		  else
-			  return false;
-	  }
+      if (idx < len) return nodes[idx++];
+      else return 0;
+    }
 	 
-    void enqueue(Kernel *n) 
-    {
-      Node newNode;
-      newNode.k = n;
-      if (isEmpty())
-      {
-        front = &newNode;
-        rear = &newNode;
-      }
-      else
-      {
-        rear->nextNode = &newNode;
-        rear = &newNode;
-      }
-    }
+  //   void enqueue(Kernel *n) 
+  //   {
+  //     Node newNode;
+  //     newNode.k = n;
+  //     if (isEmpty())
+  //     {
+  //       front = &newNode;
+  //       rear = &newNode;
+  //     }
+  //     else
+  //     {
+  //       rear->nextNode = &newNode;
+  //       rear = &newNode;
+  //     }
+  //   }
 	
-	void dequeue() 
-    {
-      if (!isEmpty())  
-      {
-        if(front == rear)
-        {
-          front = 0;
-          rear = 0;  
-        }
-        else
-          front = front -> nextNode;            
-      }
-    }
+	// void dequeue() 
+  //   {
+  //     if (!isEmpty())  
+  //     {
+  //       if(front == rear)
+  //       {
+  //         front = 0;
+  //         rear = 0;  
+  //       }
+  //       else
+  //         front = front->nextNode;            
+  //     }
+  //   }
 };
 
 // Kernel invocation
@@ -341,7 +346,7 @@ template <typename K> __attribute__ ((noinline))
   }
 
 template <typename K> __attribute__ ((noinline))
-  void noclMappingKernel(K* k) 
+  void noclMapKernel(K* k) 
   {
     unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     unsigned threadsUsed = threadsPerBlock * k->gridDim.x * k->gridDim.y;
@@ -441,7 +446,7 @@ template <typename K> __attribute__ ((noinline))
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
     
-    noclMappingKernel(k);
+    noclMapKernel(k);
     return noclTriggerKernel(k);
 
   }
@@ -504,14 +509,15 @@ template <typename K> __attribute__ ((noinline))
     return ret;
   }
 
-// // Tempoary method that checks the implementation of queue
-// __attribute__ ((noinline)) void noclRunQueueAndDumpStats(Queue* queue) {
-//   while (!queue->isEmpty())
-//   {
-//     noclRunKernelAndDumpStats(&(queue->front->k));
-//     queue->dequeue();
-//   }
-// }
+// Tempoary method that checks the implementation of queue
+template <class K>
+__attribute__ ((noinline)) void noclRunQueueAndDumpStats(KernelQueue<K> *queue) {
+  K* curr;
+  while (!(curr = queue->next()))
+  {
+    noclRunKernelAndDumpStats(curr);
+  }
+}
 
 // Explicit convergence
 INLINE void noclPush() { pebblesSIMTPush(); }
