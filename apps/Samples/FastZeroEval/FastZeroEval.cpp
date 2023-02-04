@@ -22,14 +22,14 @@ void zeroByLoop(uint32_t *mem, uint32_t size)
 int main()
 {
 
-  uint32_t N = 16 * 100 * 100;
+  uint32_t N = 16 * 100 * 1;
 
   // Repeat the simulation for 10 times with increasing data size
   for (uint32_t i = 0; i < 10; i++)
   {
 
     // puts("Processing with data size: "); putchar(N*4); puts(" * 100 byte\n");
-    printf("Prcessing with data size: %d * 100 byte\n", N * 4);
+    printf("Prcessing with data size: %x * 100 byte\n", N * 4);
     // printStat("Total DRAM Access: ", STAT_SIMT_TOTAL_DRAM_ACCESSES);
     
 
