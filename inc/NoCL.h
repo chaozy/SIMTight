@@ -517,6 +517,9 @@ __attribute__ ((noinline)) void noclRunQueueAndDumpStats(KernelQueue<K> *queue) 
   {
     noclRunKernelAndDumpStats(curr);
   }
+
+  // noclMapKernel(k);
+  // return noclTriggerKernel(k);
 }
 
 // Explicit convergence
