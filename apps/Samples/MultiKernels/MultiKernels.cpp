@@ -55,7 +55,7 @@ int main()
   bool isSim = getchar();
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 1000000;
+  int N = isSim ? 3000 : 100;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], result[N];
@@ -101,23 +101,41 @@ int main()
   kernel3.input = input;
   kernel3.bins = bins;
 
-  Kernel *kernels[] = {&kernel1, &kernel2, &kernel3};
-  KernelQueue<Kernel> queue(kernels, 3);
+  // Map hardware threads to CUDA thread
+  noclMapKernel(&kernel1); 
+  noclMapKernel(&kernel2); 
+  noclMapKernel(&kernel3);
   
-  noclRunQueueAndDumpStats(&queue);
-  // noclRunKernelAndDumpStats(&queue);
+  // Init the nodes and the queue 
+  QueueNode<Kernel> node1(&kernel1);
+  QueueNode<Kernel> node2(&kernel2);
+  QueueNode<Kernel> node3(&kernel3);
+  QueueNode<Kernel> *nodes[] = {&node1, &node2, &node3};
+  KernelQueue<Kernel> queue(nodes, 3);
 
-  // Invoke kernel
-  // noclRunKernelAndDumpStats(&k2);
+  noclRunQueue(&queue);
 
-  // Check result
-  bool ok = true;
+
+  // Check VecAdd result
+  bool ok_k1 = true;
   for (int i = 0; i < N; i++)
-    ok = ok && result[i] == a[i] + b[i];
+    ok_k1 = ok_k1 && result[i] == a[i] + b[i];
 
+  // Check Reduce result
+  bool ok_k2 = sum == acc;
+
+  // Check Histogram result
+  bool ok_k3 = true;
+  int goldenBins[256];
+  for (int i = 0; i < 256; i++) goldenBins[i] = 0;
+  for (int i = 0; i < N; i++) goldenBins[input[i]]++;
+  for (int i = 0; i < 256; i++)
+    ok_k3 = ok_k3 && bins[i] == goldenBins[i];
+  // puts("ARE U SURE?\n");
   // Display result
+  printf("Results: %x, %x, %x\n", ok_k1, ok_k2, ok_k3);
   puts("Self test: ");
-  puts(ok ? "PASSED" : "FAILED");
+  puts(ok_k1 & ok_k2 & ok_k3? "PASSED" : "FAILED");
   putchar('\n');
 
   return 0;

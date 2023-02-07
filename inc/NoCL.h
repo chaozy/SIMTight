@@ -196,16 +196,15 @@ struct Kernel {
   uint32_t entryAddr;
 };
 
-// template <class K> 
-// struct Node {
-//   K *k;
+template <class K> 
+struct QueueNode {
+  K *k;
 
-//   // The pointer to next node
-//   Node *nextNode;
+  // The pointer to next node
+  bool finished;
 
-//   Node(K *kernel): k(kernel)
-//   {}
-// };
+  QueueNode(K *kernel): k(kernel), finished(false) {}
+};
 
 template <class K>
 class KernelQueue 
@@ -213,51 +212,43 @@ class KernelQueue
   public:
     int idx;
     int len;
-    K *nodes[];
+    QueueNode<K> **nodes;
 
-  	
-    KernelQueue(K *nodes[], int leng) 
-	  {
-      nodes = nodes;
-      idx = 0; len = leng;
-    }
+    KernelQueue(QueueNode<K> **ns, int leng): nodes(ns), len(leng), idx(0) {}
 
-    // Move the head to the next Node
-    K* next() 
+    // Move the curr pointer to next kernel
+    void next() 
     {
-      if (idx < len) return nodes[idx++];
-      else return 0;
+      if (isEmpty()) return ;
+      idx++;
+      while (!nodes[idx]->finished)
+      {
+        if (idx == len - 1) idx = 0;
+        else idx++;
+      } 
     }
-	 
-  //   void enqueue(Kernel *n) 
-  //   {
-  //     Node newNode;
-  //     newNode.k = n;
-  //     if (isEmpty())
-  //     {
-  //       front = &newNode;
-  //       rear = &newNode;
-  //     }
-  //     else
-  //     {
-  //       rear->nextNode = &newNode;
-  //       rear = &newNode;
-  //     }
-  //   }
-	
-	// void dequeue() 
-  //   {
-  //     if (!isEmpty())  
-  //     {
-  //       if(front == rear)
-  //       {
-  //         front = 0;
-  //         rear = 0;  
-  //       }
-  //       else
-  //         front = front->nextNode;            
-  //     }
-  //   }
+
+    // return the current kernel
+    K* curr() 
+    {
+      return nodes[idx]->k;
+    } 
+
+    // The current kernel is finished
+    void finishCurr()
+    {
+      nodes[idx]->finished = true;
+    }
+
+    // check if all kernels are finished
+    bool isEmpty()
+    {
+      for (int i = 0; i < len; i++) 
+      {
+        if (nodes[i]->finished) return true;
+      }
+      return false;
+    }
 };
 
 // Kernel invocation
@@ -292,9 +283,26 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
                             & k.map.blockYMask;
   k.blockIdx.x = blockXOffset;
   k.blockIdx.y = blockYOffset;
+  // puts("SHIT HERE\n");
+  // printf("blockidx %x, %x\n", blockXOffset, blockYOffset);
+
+  // if this is the first block on this row or block idx has exceeded the limit
+  // if (k.blockIdx.x == 1|| k.blockIdx.x >= k.gridDim.x)
+  // {
+  //   unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
+  //                             & k.map.blockXMask;
+  //   k.blockIdx.x = blockXOffset;
+  // }
+  // if (k.blockIdx.y == 1|| k.blockIdx.y >= k.gridDim.y)
+  // {
+  //   unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
+  //                             & k.map.blockYMask;
+  //   k.blockIdx.y = blockYOffset;    
+  // }
 
   // Invoke kernel
-  pebblesSIMTConverge();
+  pebblesSIMTConverge(); // why this is needed?
+
   while (k.blockIdx.y < k.gridDim.y) {
     while (k.blockIdx.x < k.gridDim.x) {
       uint32_t localBase = LOCAL_MEM_BASE +
@@ -315,6 +323,26 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
     k.blockIdx.x = blockXOffset;
     k.blockIdx.y += k.map.numYBlocks;
   }
+
+
+  // uint32_t localBase = LOCAL_MEM_BASE +
+  //             k.map.localBytesPerBlock * blockIdxWithinSM;
+  // #if EnableCHERI
+  //   // TODO: constrain bounds
+  //   void* almighty = cheri_ddc_get();
+  //   k.shared.top = (char*) cheri_address_set(almighty, localBase);
+  // #else
+  //   k.shared.top = (char*) localBase;
+  // #endif
+  // k.kernel();
+  // pebblesSIMTConverge();
+  // pebblesSIMTLocalBarrier();
+  // k.blockIdx.x += k.map.numXBlocks;
+    
+  //   pebblesSIMTConverge();
+  //   k.blockIdx.x = blockXOffset;
+  //   k.blockIdx.y += k.map.numYBlocks;
+
 
   // Issue a fence to ensure all data has reached DRAM
   pebblesFence();
@@ -511,15 +539,15 @@ template <typename K> __attribute__ ((noinline))
 
 // Tempoary method that checks the implementation of queue
 template <class K>
-__attribute__ ((noinline)) void noclRunQueueAndDumpStats(KernelQueue<K> *queue) {
+__attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> *queue) {
   K* curr;
-  while (!(curr = queue->next()))
+  while (!queue->isEmpty())
   {
-    noclRunKernelAndDumpStats(curr);
+    curr = queue->curr();
+    int ret = noclTriggerKernel(curr);
+    if (ret == 0) queue->finishCurr();
+    queue->next();
   }
-
-  // noclMapKernel(k);
-  // return noclTriggerKernel(k);
 }
 
 // Explicit convergence
