@@ -55,7 +55,7 @@ int main()
   bool isSim = getchar();
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 100;
+  int N = isSim ? 3000 : 10000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], result[N];

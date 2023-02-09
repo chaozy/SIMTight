@@ -210,9 +210,9 @@ template <class K>
 class KernelQueue 
 {
   public:
-    int idx;
     int len;
     QueueNode<K> **nodes;
+    int idx;
 
     KernelQueue(QueueNode<K> **ns, int leng): nodes(ns), len(leng), idx(0) {}
 
@@ -220,34 +220,33 @@ class KernelQueue
     void next() 
     {
       if (isEmpty()) return ;
-      idx++;
-      while (!nodes[idx]->finished)
+      if (idx == len - 1) idx = -1;
+      while (nodes[++idx]->finished)
       {
-        if (idx == len - 1) idx = 0;
-        else idx++;
+        if (idx == len - 1) idx = -1;
       } 
     }
 
-    // return the current kernel
-    K* curr() 
+    // Return the current kernel
+    K* getKernel() 
     {
       return nodes[idx]->k;
     } 
 
     // The current kernel is finished
-    void finishCurr()
+    void finishKernel()
     {
       nodes[idx]->finished = true;
     }
 
-    // check if all kernels are finished
+    // Check if all kernels are finished
     bool isEmpty()
     {
       for (int i = 0; i < len; i++) 
       {
-        if (nodes[i]->finished) return true;
+        if (!nodes[i]->finished) return false;
       }
-      return false;
+      return true;
     }
 };
 
@@ -281,63 +280,69 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
                             & k.map.blockXMask;
   unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
                             & k.map.blockYMask;
-  k.blockIdx.x = blockXOffset;
-  k.blockIdx.y = blockYOffset;
-  // puts("SHIT HERE\n");
-  // printf("blockidx %x, %x\n", blockXOffset, blockYOffset);
+  // k.blockIdx.x = blockXOffset;
+  // k.blockIdx.y = blockYOffset;
 
-  // if this is the first block on this row or block idx has exceeded the limit
-  // if (k.blockIdx.x == 1|| k.blockIdx.x >= k.gridDim.x)
-  // {
-  //   unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
-  //                             & k.map.blockXMask;
-  //   k.blockIdx.x = blockXOffset;
-  // }
-  // if (k.blockIdx.y == 1|| k.blockIdx.y >= k.gridDim.y)
-  // {
-  //   unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
-  //                             & k.map.blockYMask;
-  //   k.blockIdx.y = blockYOffset;    
-  // }
+
+  // if this is the first block on this row or the block idx has exceeded the limit,
+  // compute the block idx
+  if (k.blockIdx.x == 1 && k.blockIdx.y == 1) 
+  {
+    k.blockIdx.x = blockXOffset;
+    k.blockIdx.y = blockYOffset;  
+  }
+  // if this is the last block on the row, move to next row
+  if (k.blockIdx.x >= k.gridDim.x)
+  {
+    k.blockIdx.x = blockXOffset;
+    k.blockIdx.y += k.map.numYBlocks;
+  }
+  // All thread blocks are finished
+  if (k.blockIdx.y >= k.gridDim.y)
+  {
+    // Terminate warp
+    pebblesWarpTerminateSuccess();
+    return ;
+  }
 
   // Invoke kernel
   pebblesSIMTConverge(); // why this is needed?
 
-  while (k.blockIdx.y < k.gridDim.y) {
-    while (k.blockIdx.x < k.gridDim.x) {
-      uint32_t localBase = LOCAL_MEM_BASE +
-                 k.map.localBytesPerBlock * blockIdxWithinSM;
-      #if EnableCHERI
-        // TODO: constrain bounds
-        void* almighty = cheri_ddc_get();
-        k.shared.top = (char*) cheri_address_set(almighty, localBase);
-      #else
-        k.shared.top = (char*) localBase;
-      #endif
-      k.kernel();
-      pebblesSIMTConverge();
-      pebblesSIMTLocalBarrier();
-      k.blockIdx.x += k.map.numXBlocks;
-    }
-    pebblesSIMTConverge();
-    k.blockIdx.x = blockXOffset;
-    k.blockIdx.y += k.map.numYBlocks;
-  }
+  // while (k.blockIdx.y < k.gridDim.y) {
+  //   while (k.blockIdx.x < k.gridDim.x) {
+  //     uint32_t localBase = LOCAL_MEM_BASE +
+  //                k.map.localBytesPerBlock * blockIdxWithinSM;
+  //     #if EnableCHERI
+  //       // TODO: constrain bounds
+  //       void* almighty = cheri_ddc_get();
+  //       k.shared.top = (char*) cheri_address_set(almighty, localBase);
+  //     #else
+  //       k.shared.top = (char*) localBase;
+  //     #endif
+  //     k.kernel();
+  //     pebblesSIMTConverge();
+  //     pebblesSIMTLocalBarrier();
+  //     k.blockIdx.x += k.map.numXBlocks;
+  //   }
+  //   pebblesSIMTConverge();
+  //   k.blockIdx.x = blockXOffset;
+  //   k.blockIdx.y += k.map.numYBlocks;
+  // }
 
 
-  // uint32_t localBase = LOCAL_MEM_BASE +
-  //             k.map.localBytesPerBlock * blockIdxWithinSM;
-  // #if EnableCHERI
-  //   // TODO: constrain bounds
-  //   void* almighty = cheri_ddc_get();
-  //   k.shared.top = (char*) cheri_address_set(almighty, localBase);
-  // #else
-  //   k.shared.top = (char*) localBase;
-  // #endif
-  // k.kernel();
-  // pebblesSIMTConverge();
-  // pebblesSIMTLocalBarrier();
-  // k.blockIdx.x += k.map.numXBlocks;
+  uint32_t localBase = LOCAL_MEM_BASE +
+              k.map.localBytesPerBlock * blockIdxWithinSM;
+  #if EnableCHERI
+    // TODO: constrain bounds
+    void* almighty = cheri_ddc_get();
+    k.shared.top = (char*) cheri_address_set(almighty, localBase);
+  #else
+    k.shared.top = (char*) localBase;
+  #endif
+  k.kernel();
+  pebblesSIMTConverge();
+  pebblesSIMTLocalBarrier();
+  k.blockIdx.x += k.map.numXBlocks;
     
   //   pebblesSIMTConverge();
   //   k.blockIdx.x = blockXOffset;
@@ -348,7 +353,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   pebblesFence();
 
   // Terminate warp
-  pebblesWarpTerminateSuccess();
+  // pebblesWarpTerminateSuccess();
 }
 
 // SIMT entry point
@@ -462,9 +467,10 @@ template <typename K> __attribute__ ((noinline))
 
     // Start kernel on SIMT core
     uint32_t entryAddr = k->entryAddr;
+
     while (!pebblesSIMTCanPut()) {}
     pebblesSIMTStartKernel(entryAddr);
-
+    printf("Here: %x, %x\n", k->blockIdx.x, k->blockIdx.y);
     // Wait for kernel response
     while (!pebblesSIMTCanGet()) {}
     return pebblesSIMTGet();
@@ -543,9 +549,9 @@ __attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> *queue) {
   K* curr;
   while (!queue->isEmpty())
   {
-    curr = queue->curr();
+    curr = queue->getKernel();
     int ret = noclTriggerKernel(curr);
-    if (ret == 0) queue->finishCurr();
+    if (ret == 0) queue->finishKernel();
     queue->next();
   }
 }
