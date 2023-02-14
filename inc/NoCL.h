@@ -198,12 +198,12 @@ struct Kernel {
 
 template <class K> 
 struct QueueNode {
-  K *k;
+  K k;
 
   // The pointer to next node
   bool finished;
 
-  QueueNode(K *kernel): k(kernel), finished(false) {}
+  QueueNode(K kernel): k(kernel), finished(false) {}
 };
 
 template <class K>
@@ -228,7 +228,7 @@ class KernelQueue
     }
 
     // Return the current kernel
-    K* getKernel() 
+    K getKernel() 
     {
       return nodes[idx]->k;
     } 
@@ -274,42 +274,47 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
 
   // Unique id for thread block within SM
   unsigned blockIdxWithinSM = pebblesHartId() >> k.map.blockXShift;
+  // if (k.blockIdx.x != 1) pebblesSimEmit(k.blockIdx.x);
 
   // Initialise block indices
-  unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
-                            & k.map.blockXMask;
-  unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
-                            & k.map.blockYMask;
+  // unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
+  //                           & k.map.blockXMask;
+  // unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
+  //                           & k.map.blockYMask;
+  
+
   // k.blockIdx.x = blockXOffset;
   // k.blockIdx.y = blockYOffset;
 
 
-  // if this is the first block on this row or the block idx has exceeded the limit,
-  // compute the block idx
-  if (k.blockIdx.x == 1 && k.blockIdx.y == 1) 
+  // First time enter this method TODO: HOW TO DECIDE IF THIS IS THE FIRST TIME
+  // blockIdx should start from 1?
+  if (k.blockIdx.x >= 0 && k.blockIdx.x <= 1) 
   {
+    unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
+                            & k.map.blockXMask;
+    unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
+                            & k.map.blockYMask;
     k.blockIdx.x = blockXOffset;
     k.blockIdx.y = blockYOffset;  
   }
-  // if this is the last block on the row, move to next row
-  if (k.blockIdx.x >= k.gridDim.x)
+  // First block of the current blockIdx.y, reset the blockIdx.x
+  if (k.blockIdx.x == -1)
   {
-    k.blockIdx.x = blockXOffset;
-    k.blockIdx.y += k.map.numYBlocks;
+    unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
+                            & k.map.blockXMask;
+    k.blockIdx.x = blockXOffset;  
   }
-  // All thread blocks are finished
-  if (k.blockIdx.y >= k.gridDim.y)
-  {
-    // Terminate warp
-    pebblesWarpTerminateSuccess();
-    return ;
-  }
+
+  if (k.blockIdx.y == 1) pebblesSimEmit(k.blockIdx.y);
 
   // Invoke kernel
-  pebblesSIMTConverge(); // why this is needed?
+  pebblesSIMTConverge();
 
   // while (k.blockIdx.y < k.gridDim.y) {
+  //   if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.y);
   //   while (k.blockIdx.x < k.gridDim.x) {
+  //     // if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.x);
   //     uint32_t localBase = LOCAL_MEM_BASE +
   //                k.map.localBytesPerBlock * blockIdxWithinSM;
   //     #if EnableCHERI
@@ -323,6 +328,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   //     pebblesSIMTConverge();
   //     pebblesSIMTLocalBarrier();
   //     k.blockIdx.x += k.map.numXBlocks;
+      
   //   }
   //   pebblesSIMTConverge();
   //   k.blockIdx.x = blockXOffset;
@@ -342,18 +348,49 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   k.kernel();
   pebblesSIMTConverge();
   pebblesSIMTLocalBarrier();
-  k.blockIdx.x += k.map.numXBlocks;
-    
-  //   pebblesSIMTConverge();
-  //   k.blockIdx.x = blockXOffset;
-  //   k.blockIdx.y += k.map.numYBlocks;
 
 
   // Issue a fence to ensure all data has reached DRAM
   pebblesFence();
 
   // Terminate warp
-  // pebblesWarpTerminateSuccess();
+  pebblesWarpTerminateSuccess();
+}
+
+// Tempoary method that checks the implementation of queue
+template <class K>
+__attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> queue) {
+  K curr;
+  while (!queue.isEmpty())
+  {
+    curr = queue.getKernel();
+    printf("BlockIdx: %x, %x\n", curr.blockIdx.x, curr.blockIdx.y);
+    int ret = noclTriggerKernel(&curr);
+    printf("result: %x\n", ret);
+    printf("numXBlocks: %x, numYBlocks: %x, gridDim.x: %x, gridDim.y: %x\n", 
+            curr.map.numXBlocks, curr.map.numYBlocks, curr.gridDim.x, curr.gridDim.y);
+    printf("BlockIdx: %x, %x\n", curr.blockIdx.x, curr.blockIdx.y);
+    curr.blockIdx.x += curr.map.numXBlocks;
+    if (curr.blockIdx.x >= curr.gridDim.x)
+    {
+      curr.blockIdx.x = -1;
+      curr.blockIdx.y += curr.map.numYBlocks;
+    }
+    if (curr.blockIdx.y >= curr.gridDim.y) 
+    {
+      puts("kernel finished\n");
+      queue.finishKernel();
+    }
+    
+    // printf("BlockIdx: %x, %x\n", curr->blockIdx.x, curr->blockIdx.y);
+    // int ret = noclTriggerKernel(curr);
+    // printf("numXBlocks: %x, numYBlocks: %x, gridDim.x: %x, gridDim.y: %x\n", 
+    //         curr->map.numXBlocks, curr->map.numYBlocks, curr->gridDim.x, curr->gridDim.y);
+    // printf("BlockIdx: %x, %x\n", curr->blockIdx.x, curr->blockIdx.y);
+    // if (ret == 0) queue->finishKernel();
+
+    queue.next();
+  }
 }
 
 // SIMT entry point
@@ -470,7 +507,7 @@ template <typename K> __attribute__ ((noinline))
 
     while (!pebblesSIMTCanPut()) {}
     pebblesSIMTStartKernel(entryAddr);
-    printf("Here: %x, %x\n", k->blockIdx.x, k->blockIdx.y);
+
     // Wait for kernel response
     while (!pebblesSIMTCanGet()) {}
     return pebblesSIMTGet();
@@ -543,18 +580,7 @@ template <typename K> __attribute__ ((noinline))
     return ret;
   }
 
-// Tempoary method that checks the implementation of queue
-template <class K>
-__attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> *queue) {
-  K* curr;
-  while (!queue->isEmpty())
-  {
-    curr = queue->getKernel();
-    int ret = noclTriggerKernel(curr);
-    if (ret == 0) queue->finishKernel();
-    queue->next();
-  }
-}
+
 
 // Explicit convergence
 INLINE void noclPush() { pebblesSIMTPush(); }
