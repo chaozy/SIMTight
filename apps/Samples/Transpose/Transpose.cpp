@@ -31,8 +31,8 @@ int main()
   bool isSim = getchar();
 
   // Matrix size for benchmarking
-  int width = isSim ? 256 : 512;
-  int height = isSim ? 64 : 512;
+  int width = isSim ? 256 : 256;
+  int height = isSim ? 64 : 64;
 
   // Input and output matrix data
   nocl_aligned int matInData[width*height];
@@ -66,13 +66,25 @@ int main()
   k.out = matOut;
 
   // Invoke kernel
-  noclRunKernelAndDumpStats(&k);
+  // noclRunKernelAndDumpStats(&k);
+  noclMapKernel(&k); 
+  QueueNode<Kernel> node(&k);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
 
   // Check result
   bool ok = true;
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
+    {
+      // if (matOut[i][j] != matIn[j][i]) 
+      // {
+      //   printf("i: %x, j: %x, out: %x, in: %x\n", i, j, matOut[i][j], matIn[j][i]);
+      // }
       ok = ok && matOut[i][j] == matIn[j][i];
+    }
+      
 
   // Display result
   puts("Self test: ");

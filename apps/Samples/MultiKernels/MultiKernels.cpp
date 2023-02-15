@@ -167,13 +167,12 @@ int main()
   noclMapKernel(&kernel4);
   
   // Init the nodes and the queue 
-  QueueNode<Kernel> node1(kernel1);
-  QueueNode<Kernel> node2(kernel2);
-  QueueNode<Kernel> node3(kernel3);
-  QueueNode<Kernel> node4(kernel4);
-  QueueNode<Kernel> *nodes[] = {&node4};
-  KernelQueue<Kernel> queue(nodes, 1);
-
+  QueueNode<Kernel> node1(&kernel1);
+  QueueNode<Kernel> node2(&kernel2);
+  QueueNode<Kernel> node3(&kernel3);
+  QueueNode<Kernel> node4(&kernel4);
+  QueueNode<Kernel> *nodes[] = {&node1, &node2, &node3, &node4};
+  KernelQueue<Kernel> queue(nodes, 4);
   noclRunQueue(queue);
 
 
@@ -197,8 +196,14 @@ int main()
   bool ok_k4 = true;
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
+    {
+      // printf("i: %x, j: %x, out: %x, in: %x", i, j, matOut[i][j], matIn[j][i]);
+      if (matOut[i][j] != matIn[j][i]) 
+      {
+        printf("i: %x, j: %x, out: %x, in: %x\n", i, j, matOut[i][j], matIn[j][i]);
+      }
       ok_k4 = ok_k4 && matOut[i][j] == matIn[j][i];
-
+    }
   // Display result
   printf("Results: %x, %x, %x, %x\n", ok_k1, ok_k2, ok_k3, ok_k4);
   puts("Self test: ");

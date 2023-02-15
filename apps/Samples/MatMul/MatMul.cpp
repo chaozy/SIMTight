@@ -145,7 +145,11 @@ int main()
   k.C = matC;
 
   // Invoke kernel
-  noclRunKernelAndDumpStats(&k);
+  noclMapKernel(&k); 
+  QueueNode<Kernel> node(&k);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
 
   // Check result
   bool ok = true;

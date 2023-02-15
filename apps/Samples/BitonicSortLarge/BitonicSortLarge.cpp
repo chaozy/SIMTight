@@ -213,7 +213,12 @@ int main()
   sortLocal.d_DstVal_arg = dstVals;
   sortLocal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
   sortLocal.gridDim.x = N / LOCAL_SIZE_LIMIT;
-  noclRunKernelAndDumpStats(&sortLocal);
+  // noclRunKernelAndDumpStats(&sortLocal);
+  noclMapKernel(&sortLocal); 
+  QueueNode<Kernel> node(&sortLocal);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
 
   for (unsigned size = 2 * LOCAL_SIZE_LIMIT; size <= N; size <<= 1) {
     for (unsigned stride = size / 2; stride > 0; stride >>= 1) {
@@ -229,7 +234,12 @@ int main()
         mergeGlobal.sortDir = 1;
         mergeGlobal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
         mergeGlobal.gridDim.x = N / LOCAL_SIZE_LIMIT;
-        noclRunKernelAndDumpStats(&mergeGlobal);
+        // noclRunKernelAndDumpStats(&mergeGlobal);
+        noclMapKernel(&mergeGlobal); 
+        QueueNode<Kernel> node(&mergeGlobal);
+        QueueNode<Kernel> *nodes[] = {&node};
+        KernelQueue<Kernel> queue(nodes, 1);
+        noclRunQueue(queue);
       }
       else {
         // Launch BitonicMergeLocal
@@ -243,7 +253,12 @@ int main()
         mergeLocal.sortDir = 1;
         mergeLocal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
         mergeLocal.gridDim.x = N / LOCAL_SIZE_LIMIT;
-        noclRunKernelAndDumpStats(&mergeLocal);
+        // noclRunKernelAndDumpStats(&mergeLocal);
+        noclMapKernel(&mergeLocal); 
+        QueueNode<Kernel> node(&mergeLocal);
+        QueueNode<Kernel> *nodes[] = {&node};
+        KernelQueue<Kernel> queue(nodes, 1);
+        noclRunQueue(queue);
         break;
       }
     }

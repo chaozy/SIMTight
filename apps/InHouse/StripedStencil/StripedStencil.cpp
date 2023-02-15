@@ -168,7 +168,12 @@ int main() {
   k.out_buf      = out_buf;
   k.in_buf       = in_buf;
   if (DEBUG) puts("Kernel running... ");
-  noclRunKernelAndDumpStats(&k);
+  // noclRunKernelAndDumpStats(&k);
+  noclMapKernel(&k); 
+  QueueNode<Kernel> node(&k);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
   if (DEBUG) puts("Done\n");
 
   // Check result
