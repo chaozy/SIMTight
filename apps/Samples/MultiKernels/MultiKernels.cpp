@@ -158,23 +158,36 @@ int main()
   kernel4.in = matIn;
   kernel4.out = matOut;
 
-
-
+  uint64_t cycleCount1 = pebblesCycleCount(); 
+  #if UseKernelQueue
   // Map hardware threads to CUDA thread
   noclMapKernel(&kernel1); 
   noclMapKernel(&kernel2); 
   noclMapKernel(&kernel3);
   noclMapKernel(&kernel4);
-  
+
   // Init the nodes and the queue 
   QueueNode<Kernel> node1(&kernel1);
   QueueNode<Kernel> node2(&kernel2);
   QueueNode<Kernel> node3(&kernel3);
   QueueNode<Kernel> node4(&kernel4);
-  QueueNode<Kernel> *nodes[] = {&node1, &node2, &node3, &node4};
+  QueueNode<Kernel> *nodes[] = {&node1, &node4, &node3, &node2};
   KernelQueue<Kernel> queue(nodes, 4);
   noclRunQueue(queue);
 
+  queue.print_cycle_wait();
+  #else  
+  noclRunKernel(&kernel1);
+  noclRunKernel(&kernel4);
+  noclRunKernel(&kernel3);
+  noclRunKernel(&kernel2);
+  
+  #endif 
+  uint64_t cycles = pebblesCycleCount() - cycleCount1;
+  puts("Cycle count: "); puthex(cycles >> 32); puthex(cycles); putchar('\n');
+
+  
+  
 
   // Check VecAdd result
   bool ok_k1 = true;
@@ -196,16 +209,10 @@ int main()
   bool ok_k4 = true;
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
-    {
-      // printf("i: %x, j: %x, out: %x, in: %x", i, j, matOut[i][j], matIn[j][i]);
-      if (matOut[i][j] != matIn[j][i]) 
-      {
-        printf("i: %x, j: %x, out: %x, in: %x\n", i, j, matOut[i][j], matIn[j][i]);
-      }
       ok_k4 = ok_k4 && matOut[i][j] == matIn[j][i];
-    }
+
   // Display result
-  printf("Results: %x, %x, %x, %x\n", ok_k1, ok_k2, ok_k3, ok_k4);
+  // printf("Results: %x, %x, %x, %x\n", ok_k1, ok_k2, ok_k3, ok_k4);
   puts("Self test: ");
   puts(ok_k1 & ok_k2 & ok_k3 & ok_k4? "PASSED" : "FAILED");
   putchar('\n');

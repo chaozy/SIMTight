@@ -43,8 +43,21 @@ int main()
   k.result = result;
 
   // Invoke kernel
-  noclRunKernelAndDumpStats(&k);
-
+  uint64_t cycleCount1 = pebblesCycleCount(); 
+  #if UseKernelQueue
+  noclMapKernel(&k); 
+  QueueNode<Kernel> node(&k);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
+  #else
+  // noclRunKernelAndDumpStats(&k);
+  noclRunKernel(&k);
+  #endif
+  uint64_t cycleCount2 = pebblesCycleCount(); 
+  uint64_t cycles = cycleCount2 - cycleCount1;
+  puts("Cycles: "); puthex(cycles >> 32);  puthex(cycles); putchar('\n');
+  
   // Check result
   bool ok = true;
   for (int i = 0; i < N; i++)

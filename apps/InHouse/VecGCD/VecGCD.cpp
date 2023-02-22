@@ -58,7 +58,15 @@ int main()
   k.result = result;
 
   // Invoke kernel
+  #if UseKernelQueue
+  noclMapKernel(&k); 
+  QueueNode<Kernel> node(&k);
+  QueueNode<Kernel> *nodes[] = {&node};
+  KernelQueue<Kernel> queue(nodes, 1);
+  noclRunQueue(queue);
+  #else
   noclRunKernelAndDumpStats(&k);
+  #endif
 
   // Check result
   bool ok = true;

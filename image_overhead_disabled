@@ -1,0 +1,21 @@
+Fitter Status : Successful - Thu Feb 16 09:20:25 2023
+Quartus Prime Version : 22.1.0 Build 174 03/30/2022 SC Pro Edition
+Revision Name : DE10_Pro
+Top-level Entity Name : DE10_Pro
+Family : Stratix 10
+Device : 1SX280HU2F50E1VG
+Timing Models : Final
+Power Models : Final
+Device Status : Final
+Logic utilization (in ALMs) : 62,427 / 933,120 ( 7 % )
+Total dedicated logic registers : 106857
+Total pins : 213 / 1,152 ( 18 % )
+Total block memory bits : 3,680,944 / 240,046,080 ( 2 % )
+Total RAM Blocks : 472 / 11,721 ( 4 % )
+Total DSP Blocks : 66 / 5,760 ( 1 % )
+Total DIB Channels : 0 / 75 ( 0 % )
+Total HSSI RX channels : 0 / 96 ( 0 % )
+Total HSSI TX channels : 0 / 96 ( 0 % )
+Total HSSI HPS : 0 / 1 ( 0 % )
+Total HSSI EHIPs : 0 / 4 ( 0 % )
+Total PLLs : 4 / 184 ( 2 % )

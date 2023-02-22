@@ -199,11 +199,19 @@ struct Kernel {
 template <class K> 
 struct QueueNode {
   K* k;
+  // Three cycle counters
+  uint64_t cycle_point;
+  uint64_t cycle_wait;
+  uint64_t cycle_execute;
 
   // The pointer to next node
   bool finished;
 
-  QueueNode(K* kernel): k(kernel), finished(false) {}
+  QueueNode(K* kernel): k(kernel), finished(false) {
+    cycle_point = pebblesCycleCount();
+    cycle_wait = 0;
+    cycle_execute = 0;
+  }
 };
 
 template <class K>
@@ -219,6 +227,9 @@ class KernelQueue
     // Move the curr pointer to next kernel
     void next() 
     {
+      nodes[idx]->cycle_execute += pebblesCycleCount() - nodes[idx]->cycle_point;
+      nodes[idx]->cycle_point = pebblesCycleCount();
+
       if (isEmpty()) return ;
       if (idx == len - 1) idx = -1;
       while (nodes[++idx]->finished)
@@ -230,6 +241,9 @@ class KernelQueue
     // Return the current kernel
     K* getKernel() 
     {
+      // Waiting is over and execution is started
+      nodes[idx]->cycle_wait += pebblesCycleCount() - nodes[idx]->cycle_point;
+      nodes[idx]->cycle_point = pebblesCycleCount();
       return nodes[idx]->k;
     } 
 
@@ -247,6 +261,19 @@ class KernelQueue
         if (!nodes[i]->finished) return false;
       }
       return true;
+    }
+
+    // Print the number cycles that each kernel spent waiting
+    void print_cycle_wait()
+    {
+      for (int i = 0; i < len; i++)
+      {
+        printf("Kernel %x waited: ", i); 
+        puthex(nodes[i]->cycle_wait >> 32); puthex(nodes[i]->cycle_wait); 
+        printf("   executed: ", i); 
+        puthex(nodes[i]->cycle_execute >> 32); puthex(nodes[i]->cycle_execute); 
+        putchar('\n');
+      }
     }
 };
 
@@ -282,38 +309,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
                             & k.map.blockYMask;
   
-
-  // k.blockIdx.x = blockXOffset;
-  // k.blockIdx.y = blockYOffset;
-
-  // Invoke kernel
-  pebblesSIMTConverge();
-
-  // while (k.blockIdx.y < k.gridDim.y) {
-  //   if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.y);
-  //   while (k.blockIdx.x < k.gridDim.x) {
-  //     // if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.x);
-  //     uint32_t localBase = LOCAL_MEM_BASE +
-  //                k.map.localBytesPerBlock * blockIdxWithinSM;
-  //     #if EnableCHERI
-  //       // TODO: constrain bounds
-  //       void* almighty = cheri_ddc_get();
-  //       k.shared.top = (char*) cheri_address_set(almighty, localBase);
-  //     #else
-  //       k.shared.top = (char*) localBase;
-  //     #endif
-  //     k.kernel();
-  //     pebblesSIMTConverge();
-  //     pebblesSIMTLocalBarrier();
-  //     k.blockIdx.x += k.map.numXBlocks;
-      
-  //   }
-  //   pebblesSIMTConverge();
-  //   k.blockIdx.x = blockXOffset;
-  //   k.blockIdx.y += k.map.numYBlocks;
-  // }
-
-
+  #if UseKernelQueue
   k.blockIdx.x += blockXOffset;
   k.blockIdx.y += blockYOffset;
   if (k.blockIdx.y < k.gridDim.y && k.blockIdx.x < k.gridDim.x) {
@@ -330,40 +326,45 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
     pebblesSIMTConverge();
     pebblesSIMTLocalBarrier();
   }
+  #else
+  k.blockIdx.x = blockXOffset;
+  k.blockIdx.y = blockYOffset;
+
+  // Invoke kernel
+  pebblesSIMTConverge();
+
+  while (k.blockIdx.y < k.gridDim.y) {
+    if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.y);
+    while (k.blockIdx.x < k.gridDim.x) {
+      // if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.x);
+      uint32_t localBase = LOCAL_MEM_BASE +
+                 k.map.localBytesPerBlock * blockIdxWithinSM;
+      #if EnableCHERI
+        // TODO: constrain bounds
+        void* almighty = cheri_ddc_get();
+        k.shared.top = (char*) cheri_address_set(almighty, localBase);
+      #else
+        k.shared.top = (char*) localBase;
+      #endif
+      k.kernel();
+      pebblesSIMTConverge();
+      pebblesSIMTLocalBarrier();
+      k.blockIdx.x += k.map.numXBlocks;
+      
+    }
+    pebblesSIMTConverge();
+    k.blockIdx.x = blockXOffset;
+    k.blockIdx.y += k.map.numYBlocks;
+  }
+  #endif
+
+
 
   // Issue a fence to ensure all data has reached DRAM
   pebblesFence();
 
   // Terminate warp TODO: The warp might not be finished
   pebblesWarpTerminateSuccess();
-}
-
-// Tempoary method that checks the implementation of queue
-template <class K>
-__attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> queue) {
-  K* curr;
-  while (!queue.isEmpty())
-  {
-    curr = queue.getKernel();
-    noclTriggerKernel(curr);
-    curr->blockIdx.x += curr->map.numXBlocks;
-
-    // If blockIdx.x exceeds the gridDim,reset to 0 and increment blockIdx.y
-    if (curr->blockIdx.x >= curr->gridDim.x)
-    {
-      curr->blockIdx.x = 0; 
-      curr->blockIdx.y += curr->map.numYBlocks;
-    }
-    // If blockIdx.y exceeds the gridDim, reset the blockIdx in case this kernel being reused
-    if (curr->blockIdx.y >= curr->gridDim.y) 
-    {
-      curr->blockIdx.x = 0;
-      curr->blockIdx.y = 0;
-      queue.finishKernel();
-    }
-
-    queue.next();
-  }
 }
 
 // SIMT entry point
@@ -489,10 +490,15 @@ template <typename K> __attribute__ ((noinline))
 // Trigger SIMT kernel execution from CPU
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
-    
-    noclMapKernel(k);
-    return noclTriggerKernel(k);
 
+    uint64_t c1 = pebblesCycleCount();
+
+    noclMapKernel(k);
+    int ret = noclTriggerKernel(k);
+
+    uint64_t c = pebblesCycleCount() - c1;
+    puts("Executed: "); puthex(c >> 32); puthex(c); putchar('\n');
+    return ret;
   }
 
 // Ask SIMT core for given performance stat
@@ -553,6 +559,48 @@ template <typename K> __attribute__ ((noinline))
     return ret;
   }
 
+template <class K>
+__attribute__ ((noinline)) void noclRunQueue(KernelQueue<K> queue) 
+{
+  K* curr;
+  while (!queue.isEmpty())
+  {
+    curr = queue.getKernel();
+    noclTriggerKernel(curr);
+    curr->blockIdx.x += curr->map.numXBlocks;
+
+    // If blockIdx.x exceeds the gridDim.x, reset it to 0 and increment blockIdx.y
+    if (curr->blockIdx.x >= curr->gridDim.x)
+    {
+      curr->blockIdx.x = 0; 
+      curr->blockIdx.y += curr->map.numYBlocks;
+    }
+    // If blockIdx.y exceeds the gridDim.y, reset the blockIdx in case this kernel being reused
+    if (curr->blockIdx.y >= curr->gridDim.y) 
+    {
+      curr->blockIdx.x = 0;
+      curr->blockIdx.y = 0;
+      queue.finishKernel();
+    }
+
+    queue.next();
+  }
+
+  // // Get number of cycles taken
+  // printStat("Cycles: ", STAT_SIMT_CYCLES);
+
+  // // Get number of instructions executed
+  // printStat("Instrs: ", STAT_SIMT_INSTRS);
+
+  // // Get number of pipeline bubbles due to suspended warp being scheduled
+  // printStat("Susps: ", STAT_SIMT_SUSP_BUBBLES);
+
+  // // Get number of pipeline retries
+  // printStat("Retries: ", STAT_SIMT_RETRIES);
+
+  // // Get number of DRAM accesses
+  // printStat("DRAMAccs: ", STAT_SIMT_DRAM_ACCESSES);
+}
 
 
 // Explicit convergence

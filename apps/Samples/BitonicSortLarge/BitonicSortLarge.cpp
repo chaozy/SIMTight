@@ -213,12 +213,18 @@ int main()
   sortLocal.d_DstVal_arg = dstVals;
   sortLocal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
   sortLocal.gridDim.x = N / LOCAL_SIZE_LIMIT;
-  // noclRunKernelAndDumpStats(&sortLocal);
+  
+
+  uint64_t cycleCount1 = pebblesCycleCount(); 
+  #if UseKernelQueue
   noclMapKernel(&sortLocal); 
   QueueNode<Kernel> node(&sortLocal);
   QueueNode<Kernel> *nodes[] = {&node};
   KernelQueue<Kernel> queue(nodes, 1);
   noclRunQueue(queue);
+  #else
+  noclRunKernel(&sortLocal);
+  #endif
 
   for (unsigned size = 2 * LOCAL_SIZE_LIMIT; size <= N; size <<= 1) {
     for (unsigned stride = size / 2; stride > 0; stride >>= 1) {
@@ -235,11 +241,15 @@ int main()
         mergeGlobal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
         mergeGlobal.gridDim.x = N / LOCAL_SIZE_LIMIT;
         // noclRunKernelAndDumpStats(&mergeGlobal);
+        #if UseKernelQueue
         noclMapKernel(&mergeGlobal); 
         QueueNode<Kernel> node(&mergeGlobal);
         QueueNode<Kernel> *nodes[] = {&node};
         KernelQueue<Kernel> queue(nodes, 1);
         noclRunQueue(queue);
+        #else
+        noclRunKernel(&mergeGlobal);
+        #endif
       }
       else {
         // Launch BitonicMergeLocal
@@ -254,15 +264,23 @@ int main()
         mergeLocal.blockDim.x = LOCAL_SIZE_LIMIT / 2;
         mergeLocal.gridDim.x = N / LOCAL_SIZE_LIMIT;
         // noclRunKernelAndDumpStats(&mergeLocal);
+        #if UseKernelQueue
         noclMapKernel(&mergeLocal); 
         QueueNode<Kernel> node(&mergeLocal);
         QueueNode<Kernel> *nodes[] = {&node};
         KernelQueue<Kernel> queue(nodes, 1);
         noclRunQueue(queue);
+        #else
+        noclRunKernel(&mergeLocal);
+        #endif
         break;
       }
     }
   }
+
+  uint64_t cycleCount2 = pebblesCycleCount(); 
+  uint64_t cycles = cycleCount2 - cycleCount1;
+  puts("Cycles: "); puthex(cycles >> 32);  puthex(cycles); putchar('\n');
 
   // Check result
   bool ok = true;

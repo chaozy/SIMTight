@@ -152,3 +152,9 @@ NOTE("Memory base (after tag bit region)")
 
 NOTE("Space reserved in instruction memory for boot loader")
 #define MaxBootImageBytes 1024
+
+NOTE("Kernel concurrency")
+NOTE("==========")
+
+NOTE("Use kernel queue to interleaving multiple kernels")
+#define UseKernelQueue 0

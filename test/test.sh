@@ -32,6 +32,7 @@ LogSim=
 EmitStats=
 SkipTests=
 SkipCPU=
+CPU_EmitStats=
 
 # Arguments
 # =========
@@ -78,6 +79,9 @@ do
       ;;
     --skip-cpu)
       SkipCPU=yup
+      ;;
+    --cpu-stats)
+      CPU_EmitStats=yup
       ;;
     -?*)
       printf 'Ignoring unknown flag: %s\n' "$1" >&2
@@ -264,6 +268,7 @@ checkApp() {
   local DRAM_ACCS=$(getStat "DRAMAccs")
   local IPC=$(python3 -c "print('%.2f' % (float(${INSTRS}) / ${CYCLES}))")
   local OPTIONAL_STATS=""
+  local CPU_CYCLES=$(getStat "Cycles")
   if [ "$VEC_REGS" != "" ]; then
     OPTIONAL_STATS="$OPTIONAL_STATS,VecRegs=$VEC_REGS"
   fi
@@ -294,6 +299,10 @@ checkApp() {
   else
     test "$OK" != ""
     assert $? "" ""
+  fi
+  if [ "$CPU_EmitStats" != "" ]; then
+    test "$OK" != ""
+    assert $? "" "[Cycles=$CPU_CYCLES]"
   fi
 }
 

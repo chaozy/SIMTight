@@ -1,0 +1,40 @@
+Quartus available: [0;32mok[0m
+FPGA image available: [0;32mok[0m
+FPGA available: [0;32mok[0m
+Programming FPGA: [0;32mok[0m
+
+Apps (FPGA)
+===========
+
+Samples/VecAdd (build): [0;32mok[0m
+Samples/VecAdd (run): [0;32mok[0m
+[0;32mok[0m[Cycles=399483]
+Samples/Histogram (build): [0;32mok[0m
+Samples/Histogram (run): [0;32mok[0m
+[0;32mok[0m[Cycles=236426]
+Samples/Reduce (build): [0;32mok[0m
+Samples/Reduce (run): [0;32mok[0m
+[0;32mok[0m[Cycles=253201]
+Samples/Scan (build): [0;32mok[0m
+Samples/Scan (run): [0;32mok[0m
+[0;32mok[0m[Cycles=7336634]
+Samples/Transpose (build): [0;32mok[0m
+Samples/Transpose (run): [0;32mok[0m
+[0;32mok[0m[Cycles=26100]
+Samples/MatVecMul (build): [0;32mok[0m
+Samples/MatVecMul (run): [0;32mok[0m
+[0;32mok[0m[Cycles=382632]
+Samples/MatMul (build): [0;32mok[0m
+Samples/MatMul (run): [0;32mok[0m
+[0;32mok[0m[Cycles=4602022]
+Samples/BitonicSortSmall (build): [0;32mok[0m
+Samples/BitonicSortSmall (run): [0;32mok[0m
+[0;32mok[0m[Cycles=879921]
+Samples/BitonicSortLarge (build): [0;32mok[0m
+Samples/BitonicSortLarge (run): [0;32mok[0m
+[0;32mok[0m[Cycles=25289814]
+Samples/SparseMatVecMul (build): [0;32mok[0m
+Samples/SparseMatVecMul (run): [0;32mok[0m
+[0;32mok[0m[Cycles=1153380]
+
+All tests passed
