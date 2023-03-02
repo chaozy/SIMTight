@@ -14,3 +14,5 @@ clean:
 	make -C BitonicSortLarge clean
 	make -C SparseMatVecMul clean
 	make -C MultiKernels clean
+	make -C NonZeroAccess clean
+	make -C MaliciousAccess clean

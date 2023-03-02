@@ -257,13 +257,13 @@ class KernelQueue
     bool isEmpty()
     {
       for (int i = 0; i < len; i++) 
-      {
-        if (!nodes[i]->finished) return false;
-      }
+        if (!nodes[i]->finished) 
+          return false;
+    
       return true;
     }
 
-    // Print the number cycles that each kernel spent waiting
+    // Print the number of cycles that each kernel spent waiting
     void print_cycle_wait()
     {
       for (int i = 0; i < len; i++)
@@ -491,13 +491,13 @@ template <typename K> __attribute__ ((noinline))
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
 
-    uint64_t c1 = pebblesCycleCount();
+    // uint64_t c1 = pebblesCycleCount();
 
     noclMapKernel(k);
     int ret = noclTriggerKernel(k);
 
-    uint64_t c = pebblesCycleCount() - c1;
-    puts("Executed: "); puthex(c >> 32); puthex(c); putchar('\n');
+    // uint64_t c = pebblesCycleCount() - c1;
+    // puts("Executed: "); puthex(c >> 32); puthex(c); putchar('\n');
     return ret;
   }
 

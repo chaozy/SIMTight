@@ -186,8 +186,6 @@ int main()
   uint64_t cycles = pebblesCycleCount() - cycleCount1;
   puts("Cycle count: "); puthex(cycles >> 32); puthex(cycles); putchar('\n');
 
-  
-  
 
   // Check VecAdd result
   bool ok_k1 = true;
