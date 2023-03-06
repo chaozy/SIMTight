@@ -363,7 +363,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   // Issue a fence to ensure all data has reached DRAM
   pebblesFence();
 
-  // Terminate warp TODO: The warp might not be finished
+  // Terminate warp TODO: The warp might not be finished yet
   pebblesWarpTerminateSuccess();
 }
 

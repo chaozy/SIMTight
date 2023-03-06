@@ -2,47 +2,20 @@
 #include <Rand.h>
 
 // Kernel for vector summation
-template <int BlockSize> struct Reduce : Kernel {
-  int len;
-  int *in, *sum, *sec;
+struct Reduce : Kernel {
+  int *in, *res;
   
   void kernel() {
-    int* block = shared.array<int, BlockSize>();
-
-    // Sum global memory
-    block[threadIdx.x] = 0;
-    for (int i = threadIdx.x; i < len; i += blockDim.x)
-      block[threadIdx.x] += in[i];
-
-    __syncthreads();
-
-    // Sum shared local memory
-    for(int i = blockDim.x >> 1; i > 0; i >>= 1)  {
-      if (threadIdx.x < i)
-        block[threadIdx.x] += block[threadIdx.x + i];
-      __syncthreads();
-    }
-
-    // Write sum to global memory
-    if (threadIdx.x == 0) *sum = block[0];
-    if (threadIdx.x == 1000) *sec = block[1000];
+    if (threadIdx.x == 0) in[0] = 0xdeadbeaf;
   }
 };
 
-template <int BlockSize> struct MaliciousAccess : Kernel {
-	int *res;
+struct MaliciousAccess : Kernel {
+	int *in, *res;
 	
 	void kernel()
 	{
-		int* block = shared.array<int, BlockSize>();
-		// int size = sizeof(int) * BlockSize;
-		// block -= size;
-    //block[threadIdx.x] = 1;
-    // __syncthreads();
-    // if (threadIdx.x == 2000) block[0] = 1;
-    
-		if (threadIdx.x == 1000) *res = block[1000];
-    // if (threadIdx.x == 1) block[0] = 1;
+		if (threadIdx.x == 0) *res = in[0];
 	}
 };
 
@@ -54,7 +27,6 @@ int main()
 
   // Input and outputs
   simt_aligned int in[N];
-  int sum;
 
   // Initialise inputs
   uint32_t seed = 1;
@@ -65,25 +37,19 @@ int main()
     acc += r;
   }
 
-  // Instantiate kernel
-  Reduce<SIMTWarps * SIMTLanes> k;
-
-  // Instantiate NonZeroAccess
-	MaliciousAccess<SIMTWarps> ma;
-	int res;
-  int sec;
-	ma.res = &res;
+  int reduceRes;
+  int maRes;
+  Reduce k;
+	MaliciousAccess ma;
+	ma.in = in;
+  ma.res = &maRes;
   ma.blockDim.x = SIMTWarps * SIMTLanes;
   ma.gridDim.x = 3;
 
+  k.in = in;
+  k.res = &reduceRes;
   k.blockDim.x = SIMTLanes * SIMTLanes;
   k.gridDim.x = 4;
-
-  // Assign parameters
-  k.len = N;
-  k.in = in;
-  k.sum = &sum;
-  k.sec = &sec;
 
   // Invoke kernel
   uint64_t cycleCount1 = pebblesCycleCount(); 
@@ -105,10 +71,9 @@ int main()
   // puts("Cycles: "); puthex(cycles >> 32);  puthex(cycles); putchar('\n');
 
   // Check result
-  bool ok = sum == acc;
-	ok = (sec == res) & ok;
+  bool ok = maRes == 0xdeadbeaf;
 
-  printf("Sum from Reduce: %x, from MalicousAccess: %x\n", sec, res);
+  // printf("Sum from Reduce: %x, from MalicousAccess: %x\n", sec, res);
 
   // Display result
   puts("Self test: ");
