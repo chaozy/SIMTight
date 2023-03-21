@@ -4,3 +4,4 @@ clean:
 	make -C TestSuite clean
 	make -C Samples clean
 	make -C InHouse clean
+	make -C Malicious clean

@@ -1,17 +1,10 @@
 #include <NoCL.h>
 #include <Rand.h>
 
-INLINE int readReg()
-{
-  int x;
-  asm volatile("csrrw %0, 0x1, zero" : "=r"(x));
-  return x;
-}
-
 // Kernel for vector summation
 template <int BlockSize> struct Reduce : Kernel {
   int len;
-  int *in, *sum, *shared_in, *reg;
+  int *in, *sum;
   
   void kernel() {
     int* block = shared.array<int, BlockSize>();
@@ -32,32 +25,24 @@ template <int BlockSize> struct Reduce : Kernel {
 
     // Write sum to global memory
     if (threadIdx.x == 0) *sum = block[0];
-
-    // Change the stack memory
-    if (threadIdx.x == 1000) shared_in[1000] = 0xdeadbeaf;
-
-    if (threadIdx.x == 64)  *reg = readReg();
-	}
-
+  }
 };
 
-template <int BlockSize> struct NonZeroAccess : Kernel {
-	int *res, *read, *shared_in, *reg;
-	
+struct MaliciousAccess : Kernel {
+  int *in, *res, *offset;
+  int target;
+
 	void kernel()
 	{
-    // The top pointer is reset after every block is finished,  
-    // hence this address is the same as the one in previous kernel
-		int* block = shared.array<int, BlockSize>();
-
-    // Read the shared memory
-		if (threadIdx.x == 0) *res = block[0];
-
-    // Read the stack memory
-    if (threadIdx.x == 1000) *read = shared_in[1000];
-
-    // Read the register
-    if (threadIdx.x == 64)  *reg = readReg();
+    for (int i = 0; i < 10000; i++)
+    {
+      if ((in - sizeof(int) * i)[0] == target )
+      {
+        *offset = i;
+        *res = (in - sizeof(int) * i)[0] ;
+        break;
+      }
+    }
 	}
 };
 
@@ -65,58 +50,58 @@ int main()
 {
   
   bool isSim = getchar();
-  int N = isSim ? 3000 : 1000000;
+  int N = isSim ? 3000 : 100;
 
   // Input and outputs
   simt_aligned int in[N];
-  simt_aligned int shared_in[N];
+  simt_aligned int in_ma[1];
 
-
+  // Initialise inputs
   uint32_t seed = 1;
   int acc = 0;
   for (int i = 0; i < N; i++) {
     int r = rand15(&seed);
     in[i] = r;
-    shared_in[i] = r;
     acc += r;
   }
+  
 
-  // Instantiate kernel
   Reduce<SIMTWarps * SIMTLanes> k;
+	MaliciousAccess ma;
+  int res_ma, offset;
+  ma.blockDim.x = SIMTWarps * SIMTLanes;
+  ma.gridDim.x = 3;
+  ma.in = in_ma;
+  ma.res = &res_ma;
+  ma.offset = &offset; 
 
-  // Instantiate NonZeroAccess
-	NonZeroAccess<SIMTWarps> na;
-	int res, read, na_reg;
-	na.res = &res;
-  na.read = &read;
-  na.reg = &na_reg;
-  na.shared_in = shared_in;
+  // Set the first element of the input array to a unique value
+  acc = acc - in[0] + 0xdeadbeaf;
+  in[0] = 0xdeadbeaf;
+  ma.target = in[0];
 
-  na.blockDim.x = SIMTWarps * SIMTLanes;
-  na.gridDim.x = 3;
 
-    int sum, k_reg;
-  k.len = N;
+  int sum;
   k.in = in;
+  k.len = N;
   k.sum = &sum;
-  k.reg = &k_reg;
-  k.shared_in = shared_in;
-  k.blockDim.x = SIMTWarps * SIMTLanes;
+  k.blockDim.x = SIMTLanes * SIMTLanes;
   k.gridDim.x = 4;
 
   // Invoke kernel
   uint64_t cycleCount1 = pebblesCycleCount(); 
   #if UseKernelQueue
   noclMapKernel(&k);
-  noclMapKernel(&na); 
+  noclMapKernel(&ma); 
   QueueNode<Kernel> node1(&k);
-  QueueNode<Kernel> node2(&na);
+  QueueNode<Kernel> node2(&ma);
   QueueNode<Kernel> *nodes[] = {&node1, &node2};
   KernelQueue<Kernel> queue(nodes, 2);
   noclRunQueue(queue);
+  queue.print_cycle_wait();
   #else
   noclRunKernel(&k);
-	// noclRunKernel(&na);
+	noclRunKernel(&ma);
   #endif
   // uint64_t cycleCount2 = pebblesCycleCount(); 
   // uint64_t cycles = cycleCount2 - cycleCount1;
@@ -124,12 +109,9 @@ int main()
 
   // Check result
   bool ok = sum == acc;
-	ok = (sum == res) & ok;
-  ok = (read == 0xdeadbeaf);
-  // ok = (reg == 3); 
+  printf("in[0] from Reduce: %x, read from Malicious kernel: %x, offset is %x\n",
+                            in[0], res_ma, offset);
 
-  printf("Sum from Reduce: %x, from NonZerodAccess: %x\n", sum, res);
-  puthex(k_reg); putchar('\n');
   // Display result
   puts("Self test: ");
   puts(ok ? "PASSED" : "FAILED");

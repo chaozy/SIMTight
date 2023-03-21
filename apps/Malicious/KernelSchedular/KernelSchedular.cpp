@@ -2,20 +2,36 @@
 #include <Rand.h>
 
 // Kernel for vector summation
-struct Reduce : Kernel {
-  int *in, *res;
+template <int BlockSize> struct Reduce : Kernel {
+  int len;
+  int *in, *sum;
   
   void kernel() {
-    if (threadIdx.x == 0) in[0] = 0xdeadbeaf;
+    int* block = shared.array<int, BlockSize>();
+
+    // Sum global memory
+    block[threadIdx.x] = 0;
+    for (int i = threadIdx.x; i < len; i += blockDim.x)
+      block[threadIdx.x] += in[i];
+
+    __syncthreads();
+
+    // Sum shared local memory
+    for(int i = blockDim.x >> 1; i > 0; i >>= 1)  {
+      if (threadIdx.x < i)
+        block[threadIdx.x] += block[threadIdx.x + i];
+      __syncthreads();
+    }
+
+    // Write sum to global memory
+    if (threadIdx.x == 0) *sum = block[0];
   }
 };
 
 struct MaliciousAccess : Kernel {
-	int *in, *res;
-	
 	void kernel()
 	{
-		if (threadIdx.x == 0) *res = in[0];
+    gridDim.x += 1;
 	}
 };
 
@@ -23,7 +39,7 @@ int main()
 {
   
   bool isSim = getchar();
-  int N = isSim ? 3000 : 1000000;
+  int N = isSim ? 3000 : 100;
 
   // Input and outputs
   simt_aligned int in[N];
@@ -36,18 +52,19 @@ int main()
     in[i] = r;
     acc += r;
   }
+  
 
-  int reduceRes;
-  int maRes;
-  Reduce k;
+  Reduce<SIMTWarps * SIMTLanes> k;
 	MaliciousAccess ma;
-	ma.in = in;
-  ma.res = &maRes;
+  int res_ma, offset;
   ma.blockDim.x = SIMTWarps * SIMTLanes;
   ma.gridDim.x = 3;
 
+
+  int sum;
   k.in = in;
-  k.res = &reduceRes;
+  k.len = N;
+  k.sum = &sum;
   k.blockDim.x = SIMTLanes * SIMTLanes;
   k.gridDim.x = 4;
 
@@ -71,9 +88,8 @@ int main()
   // puts("Cycles: "); puthex(cycles >> 32);  puthex(cycles); putchar('\n');
 
   // Check result
-  bool ok = maRes == 0xdeadbeaf;
-
-  // printf("Sum from Reduce: %x, from MalicousAccess: %x\n", sec, res);
+  bool ok = sum == acc;
+  // ok = ok == (sum == res_ma);
 
   // Display result
   puts("Self test: ");

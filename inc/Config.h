@@ -157,4 +157,4 @@ NOTE("Kernel concurrency")
 NOTE("==========")
 
 NOTE("Use kernel queue to interleaving multiple kernels")
-#define UseKernelQueue 1
+#define UseKernelQueue 0
