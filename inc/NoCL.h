@@ -277,6 +277,8 @@ class KernelQueue
     }
 };
 
+// int CURRKERNELADDR;
+
 // Kernel invocation
 // =================
 
@@ -289,6 +291,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
     void* almighty = cheri_ddc_get();
     K* kernelPtr = (K*) cheri_address_set(almighty,
                           pebblesKernelClosureAddr());
+    // K* kernelPtr = (K*) CURRKERNELADDR;
   #else
     K* kernelPtr = (K*) pebblesKernelClosureAddr();
   #endif
@@ -329,6 +332,8 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   #else
   k.blockIdx.x = blockXOffset;
   k.blockIdx.y = blockYOffset;
+  // k.blockIdx.x = 0;
+  // k.blockIdx.y = 0;
 
   // Invoke kernel
   pebblesSIMTConverge();
@@ -395,6 +400,9 @@ template <typename K> __attribute__ ((noinline))
     unsigned threadsPerBlock = k->blockDim.x * k->blockDim.y;
     unsigned threadsUsed = threadsPerBlock * k->gridDim.x * k->gridDim.y;
 
+    // Only half of the SIMT threads are allowed to be used for one kernel
+    unsigned availableSIMTThreads = (SIMTWarps * SIMTLanes) >> 1;
+
     // Limitations for simplicity (TODO: relax)
     assert(k->blockDim.z == 1,
       "NoCL: blockDim.z != 1 (3D thread blocks not yet supported)");
@@ -442,6 +450,7 @@ template <typename K> __attribute__ ((noinline))
 
     // Set base of shared local memory (per block)
     unsigned blocksPerSM = (SIMTWarps * SIMTLanes) / threadsPerBlock;
+    // unsigned blocksPerSM = availableSIMTThreads / threadsPerBlock;
     unsigned localBytes = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
     // End of mapping
@@ -467,6 +476,10 @@ template <typename K> __attribute__ ((noinline))
     // Set address of kernel closure
     #if EnableCHERI
       uint32_t kernelAddr = cheri_address_get(k);
+
+      // void* almighty = cheri_ddc_get();
+      // CURRKERNELADDR = cheri_address_set(almighty,
+      //                      pebblesKernelClosureAddr());
     #else
       uint32_t kernelAddr = (uint32_t) k;
     #endif

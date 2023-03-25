@@ -6,3 +6,4 @@ clean:
 	make -C NonZeroAccess clean
 	make -C MaliciousAccess clean
 	make -C KernelSchedular clean
+	make -C Temp clean
