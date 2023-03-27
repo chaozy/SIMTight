@@ -16,7 +16,7 @@ MEMORY
 SECTIONS
 {
   .text   : { *.o(.text*) }             > instrs
-  .bss    : { *.o(.bss*) }              > globals = 0
+  .sbss    : { *.o(.sbss*) }            > globals = 0
   .rodata : { *.o(.rodata*) }           > globals
   .sdata  : { *.o(.sdata*) }            > globals
   .data   : { *.o(.data*) }             > globals

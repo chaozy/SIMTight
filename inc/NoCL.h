@@ -277,7 +277,9 @@ class KernelQueue
     }
 };
 
-// int CURRKERNELADDR;
+void* CURRKERNELADDR;
+void* LOCAL_MEM;
+
 
 // Kernel invocation
 // =================
@@ -288,10 +290,10 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
 
   // Get pointer to kernel closure
   #if EnableCHERI
-    void* almighty = cheri_ddc_get();
-    K* kernelPtr = (K*) cheri_address_set(almighty,
-                          pebblesKernelClosureAddr());
-    // K* kernelPtr = (K*) CURRKERNELADDR;
+    // void* almighty = cheri_ddc_get();
+    // K* kernelPtr = (K*) cheri_address_set(almighty,
+    //                       pebblesKernelClosureAddr());
+    K* kernelPtr = (K*) CURRKERNELADDR;
   #else
     K* kernelPtr = (K*) pebblesKernelClosureAddr();
   #endif
@@ -332,8 +334,6 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   #else
   k.blockIdx.x = blockXOffset;
   k.blockIdx.y = blockYOffset;
-  // k.blockIdx.x = 0;
-  // k.blockIdx.y = 0;
 
   // Invoke kernel
   pebblesSIMTConverge();
@@ -346,8 +346,10 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
                  k.map.localBytesPerBlock * blockIdxWithinSM;
       #if EnableCHERI
         // TODO: constrain bounds
-        void* almighty = cheri_ddc_get();
-        k.shared.top = (char*) cheri_address_set(almighty, localBase);
+        // void* almighty = cheri_ddc_get();
+        // k.shared.top = (char*) cheri_address_set(almighty, localBase);
+        k.shared.top = (char*) cheri_bounds_set_exact(LOCAL_MEM, 
+                              k.map.localBytesPerBlock * blockIdxWithinSM);
       #else
         k.shared.top = (char*) localBase;
       #endif
@@ -477,9 +479,11 @@ template <typename K> __attribute__ ((noinline))
     #if EnableCHERI
       uint32_t kernelAddr = cheri_address_get(k);
 
-      // void* almighty = cheri_ddc_get();
-      // CURRKERNELADDR = cheri_address_set(almighty,
-      //                      pebblesKernelClosureAddr());
+      void* almighty = cheri_ddc_get();
+      CURRKERNELADDR = cheri_address_set(almighty,
+                           pebblesKernelClosureAddr());
+      LOCAL_MEM = cheri_address_set(almighty,
+                            LOCAL_MEM_BASE);
     #else
       uint32_t kernelAddr = (uint32_t) k;
     #endif
