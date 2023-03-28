@@ -212,7 +212,7 @@ int main()
   // Display result
   // printf("Results: %x, %x, %x, %x\n", ok_k1, ok_k2, ok_k3, ok_k4);
   puts("Self test: ");
-  puts(ok_k1 & ok_k2 & ok_k3 & ok_k4? "PASSED" : "FAILED");
+  puts((ok_k1 & ok_k2 & ok_k3 & ok_k4)? "PASSED" : "FAILED");
   putchar('\n');
 
   return 0;

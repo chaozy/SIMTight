@@ -277,8 +277,8 @@ class KernelQueue
     }
 };
 
-void* CURRKERNELADDR;
-void* LOCAL_MEM;
+Kernel* CURRKERNELADDR;
+char* LOCAL_MEM;
 
 
 // Kernel invocation
@@ -339,17 +339,17 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
   pebblesSIMTConverge();
 
   while (k.blockIdx.y < k.gridDim.y) {
-    if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.y);
     while (k.blockIdx.x < k.gridDim.x) {
-      // if (pebblesHartId() == 3) pebblesSimEmit(k.blockIdx.x);
       uint32_t localBase = LOCAL_MEM_BASE +
                  k.map.localBytesPerBlock * blockIdxWithinSM;
       #if EnableCHERI
         // TODO: constrain bounds
         // void* almighty = cheri_ddc_get();
         // k.shared.top = (char*) cheri_address_set(almighty, localBase);
-        k.shared.top = (char*) cheri_bounds_set_exact(LOCAL_MEM, 
-                              k.map.localBytesPerBlock * blockIdxWithinSM);
+        void* localBaseCap = LOCAL_MEM + k.map.localBytesPerBlock * blockIdxWithinSM;
+        // k.shared.top = (char*) cheri_bounds_set_exact(localBaseCap, 
+        //           BANKED_SRAMS_SIZE);
+        k.shared.top = (char*) localBaseCap;
       #else
         k.shared.top = (char*) localBase;
       #endif
@@ -480,9 +480,9 @@ template <typename K> __attribute__ ((noinline))
       uint32_t kernelAddr = cheri_address_get(k);
 
       void* almighty = cheri_ddc_get();
-      CURRKERNELADDR = cheri_address_set(almighty,
-                           pebblesKernelClosureAddr());
-      LOCAL_MEM = cheri_address_set(almighty,
+      CURRKERNELADDR = (Kernel*)cheri_address_set(almighty,
+                           kernelAddr);
+      LOCAL_MEM = (char *)cheri_address_set(almighty,
                             LOCAL_MEM_BASE);
     #else
       uint32_t kernelAddr = (uint32_t) k;
