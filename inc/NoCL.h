@@ -198,8 +198,9 @@ struct Kernel {
 
 // SIMT main function
 template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
-  
+
     pebblesSIMTPush();
+
     // Get pointer to kernel closure
     #if EnableCHERI
       void* almighty = cheri_ddc_get();
@@ -209,13 +210,14 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
       K* kernelPtr = (K*) pebblesKernelClosureAddr();
     #endif
     K k = *kernelPtr;
-
+    
+    if (pebblesHartId() < 1024) 
+    {
     // Set thread index
     k.threadIdx.x = pebblesHartId() & k.map.threadXMask;
     k.threadIdx.y = (pebblesHartId() >> k.map.threadXShift) & k.map.threadYMask;
     k.threadIdx.z = 0;
-  if (k.threadIdx.x < 1023) 
-  {
+
     // Unique id for thread block within SM
     unsigned blockIdxWithinSM = pebblesHartId() >> k.map.blockXShift;
 
@@ -226,7 +228,8 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
                               & k.map.blockYMask;
     k.blockIdx.x = blockXOffset;
     k.blockIdx.y = blockYOffset;
-    
+    pebblesSimEmit(k.blockIdx.x);
+    pebblesSimEmit(k.blockIdx.y);
     // Invoke kernel
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
@@ -245,6 +248,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
         pebblesSIMTLocalBarrier();
         k.blockIdx.x += k.map.numXBlocks;
       }
+      
       pebblesSIMTConverge();
       k.blockIdx.x = blockXOffset;
       k.blockIdx.y += k.map.numYBlocks;
@@ -340,6 +344,12 @@ template <typename K> __attribute__ ((noinline))
     unsigned localBytes = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
     puts("Hello world\n");
+    printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
+                      k->map.threadXMask, k->map.blockXMask, k->map.blockYMask);
+
+    printf("blockXShift: %x, numXBlocks: %x, numYBlocks: %x\n", 
+                      k->map.blockXShift, k->map.numXBlocks, k->map.numYBlocks);
+    puts("\n");
 
     // End of mapping
     // --------------
