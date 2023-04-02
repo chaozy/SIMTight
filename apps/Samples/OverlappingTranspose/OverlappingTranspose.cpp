@@ -30,8 +30,8 @@ int main()
   // Are we in simulation?
   bool isSim = getchar();
 
-  #if EnableOverlapping
-  puts("Overlapping should be turned off!\n");
+  #if !EnableOverlapping
+  puts("Overlapping is not enabled!\n");
   return 1;
   #endif
 
@@ -45,7 +45,8 @@ int main()
 
   // Friendly array wrappers
   Array2D<int> matIn(matInData, height, width);
-  Array2D<int> matOut(matOutData, width, height);
+  Array2D<int> matOutFirst(matOutData, width, height);
+  Array2D<int> matOutSecond(matOutData, width, height);
 
   // Initialise inputs
   uint32_t seed = 1;
@@ -58,27 +59,37 @@ int main()
   const int itersPerBlock = 4;
 
   // Instantiate kernel
-  Transpose<SIMTLanes> k;
+  Transpose<SIMTLanes> k1;
+  Transpose<SIMTLanes> k2;
 
-  // Set block/grid dimensions
-  k.blockDim.x = SIMTLanes;
-  k.blockDim.y = SIMTLanes / itersPerBlock;
-  k.gridDim.x = width / k.blockDim.x;
-  k.gridDim.y = height / (itersPerBlock * k.blockDim.y);
+  // Set block/grid dimensions for the first kernel 
+  k1.blockDim.x = SIMTLanes;
+  k1.blockDim.y = SIMTLanes / itersPerBlock;
+  k1.gridDim.x = width / k1.blockDim.x;
+  k1.gridDim.y = height / (itersPerBlock * k1.blockDim.y);
 
   // Assign parameters
-  k.in = matIn;
-  k.out = matOut;
+  k1.in = matIn;
+  k1.out = matOutFirst;
+
+  // Set block/grid dimensions for the second kernel 
+  k2.blockDim.x = SIMTLanes;
+  k2.blockDim.y = SIMTLanes / itersPerBlock;
+  k2.gridDim.x = width / k2.blockDim.x;
+  k2.gridDim.y = height / (itersPerBlock * k2.blockDim.y);
+
+  // Assign parameters
+  k2.in = matIn;
+  k2.out = matOutSecond;
 
   // Invoke kernel
-  noclRunKernelAndDumpStats(&k);
-  noclRunKernelAndDumpStats(&k);
+  noclRunOverlappingKernelAndDumpStats(&k1, &k2);
 
   // Check result
   bool ok = true;
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
-      ok = ok && matOut[i][j] == matIn[j][i];
+      ok = ok && matOutFirst[i][j] == matIn[j][i];
 
   // Display result
   puts("Self test: ");

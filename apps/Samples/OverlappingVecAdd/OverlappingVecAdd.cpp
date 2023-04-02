@@ -20,8 +20,8 @@ int main()
   // Are we in simulation?
   bool isSim = getchar();
 
-  #if EnableOverlapping
-  puts("Overlapping should be turned off!\n");
+  #if !EnableOverlapping
+  puts("Overlapping is not enabled!\n");
   return 1;
   #endif
 
@@ -29,7 +29,7 @@ int main()
   int N = isSim ? 3000 : 10000;
 
   // Input and output vectors
-  simt_aligned int a[N], b[N], result[N];
+  simt_aligned int a[N], b[N], resultFirst[N], resultSecond[N];
 
   // Initialise inputs
   uint32_t seed = 1;
@@ -38,31 +38,39 @@ int main()
     b[i] = rand15(&seed);
   }
 
-  // Instantiate kernel
-  VecAdd k;
+  // Instantiate the first kernel 
+  VecAdd k1;
+  k1.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
+  k1.gridDim.x = 10;
+  k1.len = N;
+  k1.a = a;
+  k1.b = b;
+  k1.result = resultFirst;
 
-  // Use a single block of threads
-  k.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k.gridDim.x = 10;
-
-  // Assign parameters
-  k.len = N;
-  k.a = a;
-  k.b = b;
-  k.result = result;
+  // Instantiate the first kernel 
+  VecAdd k2;
+  k2.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
+  k2.gridDim.x = 10;
+  k2.len = N;
+  k2.a = a;
+  k2.b = b;
+  k2.result = resultSecond;
 
   // Invoke kernel
-  noclRunKernelAndDumpStats(&k);
-  noclRunKernelAndDumpStats(&k);
+  noclRunOverlappingKernelAndDumpStats(&k1, &k2);
 
   // Check result
-  bool ok = true;
+  bool ok_first = true;
+  bool ok_second = true;
   for (int i = 0; i < N; i++)
-    ok = ok && result[i] == a[i] + b[i];
+  {
+    ok_first = ok_first && resultFirst[i] == a[i] + b[i];
+    ok_second = ok_second && resultFirst[i] == a[i] + b[i];
+  }
 
   // Display result
   puts("Self test: ");
-  puts(ok ? "PASSED" : "FAILED");
+  puts(ok_first && ok_second ? "PASSED" : "FAILED");
   putchar('\n');
 
   return 0;

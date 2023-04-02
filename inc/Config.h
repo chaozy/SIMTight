@@ -152,3 +152,6 @@ NOTE("Memory base (after tag bit region)")
 
 NOTE("Space reserved in instruction memory for boot loader")
 #define MaxBootImageBytes 1024
+
+NOTE("Overlapping is turned on")
+#define EnableOverlapping 1
