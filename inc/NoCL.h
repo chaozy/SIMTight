@@ -384,11 +384,15 @@ template <typename K> __attribute__ ((noinline))
     #if EnableCHERI
       uint32_t base = top - (1 << SIMTLogBytesPerStack);
       // Constrain bounds
-      asm volatile("cspecialr csp, ddc\n"
-                   "csetaddr csp, csp, %0\n"
-                   "csetbounds csp, csp, %1\n"
-                   "csetaddr csp, csp, %2\n"
-                   : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
+      // asm volatile("cspecialr csp, ddc\n"
+      //              "csetaddr csp, csp, %0\n"
+      //              "csetbounds csp, csp, %1\n"
+      //              "csetaddr csp, csp, %2\n"
+      //              : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
+      asm volatile("csetaddr csp, csp, %0\n"
+              "csetbounds csp, csp, %1\n"
+              "csetaddr csp, csp, %2\n"
+              : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
     #else
       asm volatile("mv sp, %0\n" : : "r"(top-8));
     #endif
@@ -480,10 +484,10 @@ template <typename K> __attribute__ ((noinline))
       uint32_t kernelAddr = cheri_address_get(k);
 
       void* almighty = cheri_ddc_get();
-      CURRKERNELADDR = (Kernel*)cheri_address_set(almighty,
-                           kernelAddr);
+      CURRKERNELADDR = k;
       LOCAL_MEM = (char *)cheri_address_set(almighty,
                             LOCAL_MEM_BASE);
+      LOCAL_MEM = (char *)cheri_bounds_set_exact((void *)LOCAL_MEM, BANKED_SRAMS_SIZE);
     #else
       uint32_t kernelAddr = (uint32_t) k;
     #endif
