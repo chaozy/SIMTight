@@ -15,3 +15,4 @@ clean:
 	make -C SparseMatVecMul clean
 	make -C OverlappingVecAdd clean
 	make -C OverlappingTranspose clean
+	make -C OverlappingKernels clean

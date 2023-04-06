@@ -249,15 +249,13 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
         pebblesSIMTConverge();
         pebblesSIMTLocalBarrier();
         // k.blockIdx.x += k.map.numXBlocks;
-
-        k.blockIdx.x += k.map.numXBlocks;
-        // k.blockIdx.x += 1;
+        k.blockIdx.x += 1;
       }
       
       pebblesSIMTConverge();
       k.blockIdx.x = blockXOffset;
-      k.blockIdx.y += k.map.numYBlocks;
-      // k.blockIdx.y += 1;
+      // k.blockIdx.y += k.map.numYBlocks;
+      k.blockIdx.y += 1;
     }
 
     // Issue a fence to ensure all data has reached DRAM
@@ -317,14 +315,13 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
         pebblesSIMTConverge();
         pebblesSIMTLocalBarrier();
         // k.blockIdx.x += k.map.numXBlocks;
-        k.blockIdx.x += k.map.numXBlocks;
-        //k.blockIdx.x += 1;
+        k.blockIdx.x += 1;
       }
       
       pebblesSIMTConverge();
       k.blockIdx.x = blockXOffset;
-      k.blockIdx.y += k.map.numYBlocks;
-      //k.blockIdx.y += 1;
+      //k.blockIdx.y += k.map.numYBlocks;
+      k.blockIdx.y += 1;
     }
 
     // Issue a fence to ensure all data has reached DRAM
@@ -336,7 +333,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
 }
 
 // SIMT entry point
-template <typename K> __attribute__ ((noinline))
+template <typename K, typename Y> __attribute__ ((noinline))
   void _noclSIMTEntry_() {
     // Stack top
     uint32_t top = 0;
@@ -360,7 +357,7 @@ template <typename K> __attribute__ ((noinline))
       if (pebblesHartId() < 1024)
         _noclSIMTMainFirst_<K>();
       else
-        _noclSIMTMainSecond_<K>();
+        _noclSIMTMainSecond_<Y>();
       // _noclSIMTMainFirst_<K>();
     }
     # else  
@@ -496,8 +493,8 @@ template <typename K> __attribute__ ((noinline))
   }
 
 // Trigger SIMT kernel execution from CPU
-template <typename K> __attribute__ ((noinline))
-  int noclRunOverlappingKernel(K* k1, K* k2) {
+template <typename K, typename Y> __attribute__ ((noinline))
+  int noclRunOverlappingKernel(K* k1, Y* k2) {
     unsigned threadsPerBlockFirst = k1->blockDim.x * k1->blockDim.y;
     unsigned threadsUsedFirst = threadsPerBlockFirst * k1->gridDim.x * k1->gridDim.y;
     unsigned threadsPerBlockSecond = k2->blockDim.x * k2->blockDim.y;
@@ -638,7 +635,7 @@ template <typename K> __attribute__ ((noinline))
       void (*entryFun)() = _noclSIMTEntry_<K>;
       uint32_t entryAddr = cheri_address_get(entryFun);
     #else
-      uint32_t entryAddr = (uint32_t) _noclSIMTEntry_<K>;
+      uint32_t entryAddr = (uint32_t) _noclSIMTEntry_<K, Y>;
     #endif
     while (!pebblesSIMTCanPut()) {}
     pebblesSIMTStartKernel(entryAddr);
@@ -707,8 +704,8 @@ template <typename K> __attribute__ ((noinline))
   }
 
 // Trigger SIMT kernel execution from CPU, and dump performance stats
-template <typename K> __attribute__ ((noinline))
-  int noclRunOverlappingKernelAndDumpStats(K* k1, K* k2) {
+template <typename K, typename Y> __attribute__ ((noinline))
+  int noclRunOverlappingKernelAndDumpStats(K* k1, Y* k2) {
     unsigned ret = noclRunOverlappingKernel(k1, k2);
 
     // Check return code

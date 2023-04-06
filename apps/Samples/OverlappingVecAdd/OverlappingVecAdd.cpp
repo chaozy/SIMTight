@@ -26,7 +26,7 @@ int main()
   #endif
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 10000;
+  int N = isSim ? 3000 : 1000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], resultFirst[N], resultSecond[N];
@@ -41,7 +41,7 @@ int main()
   // Instantiate the first kernel 
   VecAdd k1;
   k1.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k1.gridDim.x = 10;
+  k1.gridDim.x = 1;
   k1.len = N;
   k1.a = a;
   k1.b = b;
@@ -50,7 +50,7 @@ int main()
   // Instantiate the first kernel 
   VecAdd k2;
   k2.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k2.gridDim.x = 10;
+  k2.gridDim.x = 1;
   k2.len = N;
   k2.a = a;
   k2.b = b;
@@ -60,12 +60,12 @@ int main()
   noclRunOverlappingKernelAndDumpStats(&k1, &k2);
 
   // Check result
-  bool ok_first = true;
-  bool ok_second = true;
+  bool ok_first = true, ok_second = true;
   for (int i = 0; i < N; i++)
   {
     ok_first = ok_first && resultFirst[i] == a[i] + b[i];
-    ok_second = ok_second && resultFirst[i] == a[i] + b[i];
+    ok_second = ok_second && resultSecond[i] == resultFirst[i];
+    printf("first %x, second %x\n", resultFirst[i], resultSecond[i]);
   }
 
   // Display result
