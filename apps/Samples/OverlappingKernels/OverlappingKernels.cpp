@@ -109,15 +109,18 @@ int main()
 
   // Check result
   bool ok_first = true, ok_second = true;
+  for (int i = 0; i < N; i++)
+    ok_first = ok_first && resultFirst[i] == a[i] + b[i];
+    
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
     {
       ok_second = ok_second && matOut[i][j] == matIn[j][i];
-      ok_first = ok_first && resultFirst[i] == a[i] + b[i];
+      
     }
   // Display result
   puts("Self test: ");
-  puts(ok_first? "PASSED" : "FAILED");
+  puts(ok_first && ok_second? "PASSED" : "FAILED");
   putchar('\n');
 
   return 0;

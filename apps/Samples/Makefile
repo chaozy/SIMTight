@@ -16,3 +16,5 @@ clean:
 	make -C OverlappingVecAdd clean
 	make -C OverlappingTranspose clean
 	make -C OverlappingKernels clean
+	make -C NonOverlappingShared clean
+	make -C TwoKernels clean

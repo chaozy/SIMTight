@@ -216,7 +216,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
       K* kernelPtr = (K*) KERNELADDRFIRST;
     #endif
     K k = *kernelPtr;
-  
+
     // Set thread index
     k.threadIdx.x = pebblesHartId() & k.map.threadXMask;
     k.threadIdx.y = (pebblesHartId() >> k.map.threadXShift) & k.map.threadYMask;
@@ -224,7 +224,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
 
     // Unique id for thread block within SM
     unsigned blockIdxWithinSM = pebblesHartId() >> k.map.blockXShift;
-
+    
     // Initialise block indices
     unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
                               & k.map.blockXMask;
@@ -232,13 +232,14 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
                               & k.map.blockYMask;
     k.blockIdx.x = blockXOffset;
     k.blockIdx.y = blockYOffset;
+    // pebblesSimEmit(k.blockIdx.x);
     // Invoke kernel
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
       while (k.blockIdx.x < k.gridDim.x) {
         uint32_t localBase = LOCAL_MEM_BASE +
                   k.map.localBytesPerBlock * blockIdxWithinSM;
-        #if EnableCHERI        // k.blockIdx.x += 1;
+        #if EnableCHERI        
           // TODO: constrain bounds
           void* almighty = cheri_ddc_get();
           k.shared.top = (char*) cheri_address_set(almighty, localBase);
@@ -248,14 +249,14 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
         k.kernel();
         pebblesSIMTConverge();
         pebblesSIMTLocalBarrier();
-        // k.blockIdx.x += k.map.numXBlocks;
-        k.blockIdx.x += 1;
+        k.blockIdx.x += k.map.numXBlocks;
+        // k.blockIdx.x += 1;
       }
       
       pebblesSIMTConverge();
       k.blockIdx.x = blockXOffset;
-      // k.blockIdx.y += k.map.numYBlocks;
-      k.blockIdx.y += 1;
+      k.blockIdx.y += k.map.numYBlocks;
+      // k.blockIdx.y += 1;
     }
 
     // Issue a fence to ensure all data has reached DRAM
@@ -269,8 +270,8 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
 template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
 
     pebblesSIMTPush();
-    // if (pebblesHartId() >= 1024) 
-    // {
+    if (pebblesHartId() >= 1024) 
+    {
     // Get pointer to kernel closure
     #if EnableCHERI
       void* almighty = cheri_ddc_get();
@@ -278,26 +279,26 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
                             pebblesKernelClosureAddr());
     #else
       // K* kernelPtr = (K*) pebblesKernelClosureAddr();
-      K* kernelPtr = (K*) KERNELADDRFIRST;
+      K* kernelPtr = (K*) KERNELADDRSECOND;
     #endif
     K k = *kernelPtr;
   
     // Set thread index
-    k.threadIdx.x = pebblesHartId() & k.map.threadXMask;
-    k.threadIdx.y = (pebblesHartId() >> k.map.threadXShift) & k.map.threadYMask;
+    k.threadIdx.x = (pebblesHartId() - 1024) & k.map.threadXMask;
+    k.threadIdx.y = ((pebblesHartId() - 1024) >> k.map.threadXShift) & k.map.threadYMask;
     k.threadIdx.z = 0;
 
     // Unique id for thread block within SM
-    unsigned blockIdxWithinSM = pebblesHartId() >> k.map.blockXShift;
+    unsigned blockIdxWithinSM = (pebblesHartId() - 1024) >> k.map.blockXShift;
 
     // Initialise block indices
-    unsigned blockXOffset = (pebblesHartId() >> k.map.blockXShift)
+    unsigned blockXOffset = ((pebblesHartId() - 1024) >> k.map.blockXShift)
                               & k.map.blockXMask;
-    unsigned blockYOffset = (pebblesHartId() >> k.map.blockYShift)
+    unsigned blockYOffset = ((pebblesHartId() - 1024) >> k.map.blockYShift)
                               & k.map.blockYMask;
     k.blockIdx.x = blockXOffset;
     k.blockIdx.y = blockYOffset;
-    if (pebblesHartId() > 1024) pebblesSimEmit(pebblesHartId());
+    // pebblesSimEmit(blockIdxWithinSM);
     // Invoke kernel
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
@@ -314,20 +315,20 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
         k.kernel();
         pebblesSIMTConverge();
         pebblesSIMTLocalBarrier();
-        // k.blockIdx.x += k.map.numXBlocks;
-        k.blockIdx.x += 1;
+        k.blockIdx.x += k.map.numXBlocks;
+        //k.blockIdx.x += 1;
       }
       
       pebblesSIMTConverge();
       k.blockIdx.x = blockXOffset;
-      //k.blockIdx.y += k.map.numYBlocks;
-      k.blockIdx.y += 1;
+      k.blockIdx.y += k.map.numYBlocks;
+      //k.blockIdx.y += 1;
     }
 
     // Issue a fence to ensure all data has reached DRAM
     pebblesFence();
     
-    // }
+    }
     // Terminate warp
     pebblesWarpTerminateSuccess();
 }
@@ -342,6 +343,7 @@ template <typename K, typename Y> __attribute__ ((noinline))
     #if EnableCHERI
       uint32_t base = top - (1 << SIMTLogBytesPerStack);
       // Constrain bounds
+      // set the local memory gloabal variable to here
       asm volatile("cspecialr csp, ddc\n"
                    "csetaddr csp, csp, %0\n"
                    "csetbounds csp, csp, %1\n"
@@ -400,8 +402,6 @@ template <typename K> __attribute__ ((noinline))
     #endif
 
 
-
-
     // Map hardware threads to CUDA thread&block indices
     // -------------------------------------------------
 
@@ -446,7 +446,6 @@ template <typename K> __attribute__ ((noinline))
     unsigned localBytes = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
 
-    puts("Hello world\n");
     printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
                       k->map.threadXMask, k->map.blockXMask, k->map.blockYMask);
 
@@ -482,7 +481,7 @@ template <typename K> __attribute__ ((noinline))
       void (*entryFun)() = _noclSIMTEntry_<K>;
       uint32_t entryAddr = cheri_address_get(entryFun);
     #else
-      uint32_t entryAddr = (uint32_t) _noclSIMTEntry_<K>;
+      uint32_t entryAddr = (uint32_t) _noclSIMTEntry_<K, K>;
     #endif
     while (!pebblesSIMTCanPut()) {}
     pebblesSIMTStartKernel(entryAddr);
@@ -560,7 +559,6 @@ template <typename K, typename Y> __attribute__ ((noinline))
     unsigned localBytesFirst = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
     k1->map.localBytesPerBlock = localBytesFirst / blocksPerSMFirst;
 
-    puts("Hello world\n");
     printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
                       k1->map.threadXMask, k1->map.blockXMask, k1->map.blockYMask);
 

@@ -44,7 +44,8 @@ int main()
   nocl_aligned int matOutData[width*height];
 
   // Friendly array wrappers
-  Array2D<int> matIn(matInData, height, width);
+  Array2D<int> matInFirst(matInData, height, width);
+  Array2D<int> matInSecond(matInData, height, width);
   Array2D<int> matOutFirst(matOutData, width, height);
   Array2D<int> matOutSecond(matOutData, width, height);
 
@@ -52,8 +53,10 @@ int main()
   uint32_t seed = 1;
   for (int i = 0; i < height; i++)
     for (int j = 0; j < width; j++)
-      matIn[i][j] = rand15(&seed);
-
+    {
+      matInFirst[i][j] = rand15(&seed);
+      matInSecond[i][j] = rand15(&seed);
+    }
   // Number of loop iterations per block.  The number of iterations
   // times the block Y dimension must equal the block X dimension.
   const int itersPerBlock = 4;
@@ -69,7 +72,7 @@ int main()
   k1.gridDim.y = height / (itersPerBlock * k1.blockDim.y);
 
   // Assign parameters
-  k1.in = matIn;
+  k1.in = matInFirst;
   k1.out = matOutFirst;
 
   // Set block/grid dimensions for the second kernel 
@@ -79,21 +82,32 @@ int main()
   k2.gridDim.y = height / (itersPerBlock * k2.blockDim.y);
 
   // Assign parameters
-  k2.in = matIn;
+  k2.in = matInSecond;
   k2.out = matOutSecond;
 
   // Invoke kernel
   noclRunOverlappingKernelAndDumpStats(&k1, &k2);
 
   // Check result
-  bool ok = true;
+  bool okFirst = true, okSecond = true;
+  int cnt = 0;
+  // for (int i = 0; i < width; i++)
+  //   for (int j = 0; j < height; j++)
+  //   {
+  //     if (matOutSecond[i][j] != matInSecond[j][i])
+  //     printf("first: %x, firstout: %x\n", matInSecond[j][i],matOutSecond[i][j]);
+  //   }
+
   for (int i = 0; i < width; i++)
     for (int j = 0; j < height; j++)
-      ok = ok && matOutFirst[i][j] == matIn[j][i];
+    {
+      okFirst = okFirst && matOutFirst[i][j] == matInFirst[j][i];
+      okSecond = okSecond && matOutSecond[i][j] == matInSecond[j][i];
+    }
 
   // Display result
   puts("Self test: ");
-  puts(ok ? "PASSED" : "FAILED");
+  puts(okFirst && okSecond ? "PASSED" : "FAILED");
   putchar('\n');
 
   return 0;
