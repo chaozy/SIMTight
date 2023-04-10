@@ -278,7 +278,7 @@ class KernelQueue
 };
 
 Kernel* CURRKERNELADDR;
-char* LOCAL_MEM;
+void* LOCAL_MEM;
 
 
 // Kernel invocation
@@ -346,10 +346,10 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMain_() {
         // TODO: constrain bounds
         // void* almighty = cheri_ddc_get();
         // k.shared.top = (char*) cheri_address_set(almighty, localBase);
-        void* localBaseCap = LOCAL_MEM + k.map.localBytesPerBlock * blockIdxWithinSM;
+        char* localBaseCap = (char *)LOCAL_MEM + k.map.localBytesPerBlock * blockIdxWithinSM;
         // k.shared.top = (char*) cheri_bounds_set_exact(localBaseCap, 
         //           BANKED_SRAMS_SIZE);
-        k.shared.top = (char*) localBaseCap;
+        k.shared.top = localBaseCap;
       #else
         k.shared.top = (char*) localBase;
       #endif
@@ -389,10 +389,12 @@ template <typename K> __attribute__ ((noinline))
       //              "csetbounds csp, csp, %1\n"
       //              "csetaddr csp, csp, %2\n"
       //              : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
-      asm volatile("csetaddr csp, csp, %0\n"
-              "csetbounds csp, csp, %1\n"
-              "csetaddr csp, csp, %2\n"
-              : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
+      asm volatile("cmove csp, %0\n" : : "C"(LOCAL_MEM));
+      asm volatile(
+                   "csetaddr csp, csp, %0\n"
+                   "csetbounds csp, csp, %1\n"
+                   "csetaddr csp, csp, %2\n"
+                   : : "r"(base), "r"(1 << SIMTLogBytesPerStack), "r"(top-8));
     #else
       asm volatile("mv sp, %0\n" : : "r"(top-8));
     #endif
@@ -485,9 +487,9 @@ template <typename K> __attribute__ ((noinline))
 
       void* almighty = cheri_ddc_get();
       CURRKERNELADDR = k;
-      LOCAL_MEM = (char *)cheri_address_set(almighty,
+      LOCAL_MEM = cheri_address_set(almighty,
                             LOCAL_MEM_BASE);
-      LOCAL_MEM = (char *)cheri_bounds_set_exact((void *)LOCAL_MEM, BANKED_SRAMS_SIZE);
+      LOCAL_MEM = cheri_bounds_set_exact(LOCAL_MEM, BANKED_SRAMS_SIZE);
     #else
       uint32_t kernelAddr = (uint32_t) k;
     #endif
