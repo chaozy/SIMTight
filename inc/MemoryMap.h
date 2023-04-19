@@ -21,10 +21,21 @@ NOTE("Sum of sizes of banked SRAMs")
 #define BANKED_SRAMS_SIZE \
   (1 << (SIMTLogLanes + SIMTLogWordsPerSRAMBank+2))
 
+NOTE("Sum of sizes of banked SRAMs")
+#define BANKED_SRAMS_SIZE_HALF \
+  (BANKED_SRAMS_SIZE >> 1)
+
 NOTE("SIMT local memory is toward the end of DRAM, before the SIMT stacks")
 #define LOCAL_MEM_BASE (DRAM_SIZE - SIMT_STACKS_SIZE - BANKED_SRAMS_SIZE)
 #define LOCAL_MEM_BASE_LINK \
   (DRAM_SIZE_LINK - SIMT_STACKS_SIZE - BANKED_SRAMS_SIZE)
+
+NOTE("SIMT local memory for the first kernel")
+#define LOCAL_MEM_BASE_FIRST (DRAM_SIZE - SIMT_STACKS_SIZE - BANKED_SRAMS_SIZE)
+
+
+NOTE("SIMT local memory for the second kernel")
+#define LOCAL_MEM_BASE_SECOND (DRAM_SIZE - SIMT_STACKS_SIZE - BANKED_SRAMS_SIZE_HALF)
 
 NOTE("Size of SIMT register spill region")
 NOTE("We have space for int & cap meta-data reg files here")

@@ -237,7 +237,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
       while (k.blockIdx.x < k.gridDim.x) {
-        uint32_t localBase = LOCAL_MEM_BASE +
+        uint32_t localBase = LOCAL_MEM_BASE_FIRST +
                   k.map.localBytesPerBlock * blockIdxWithinSM;
         #if EnableCHERI        
           // TODO: constrain bounds
@@ -303,7 +303,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
       while (k.blockIdx.x < k.gridDim.x) {
-        uint32_t localBase = LOCAL_MEM_BASE +
+        uint32_t localBase = LOCAL_MEM_BASE_SECOND +
                   k.map.localBytesPerBlock * blockIdxWithinSM;
         #if EnableCHERI
           // TODO: constrain bounds
