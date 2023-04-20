@@ -18,3 +18,5 @@ clean:
 	make -C OverlappingKernels clean
 	make -C NonOverlappingShared clean
 	make -C TwoKernels clean
+	make -C OverlappingSparseMatVecMul clean
+	make -C OverlappingZeroing clean
