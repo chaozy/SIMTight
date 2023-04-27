@@ -20,3 +20,4 @@ clean:
 	make -C TwoKernels clean
 	make -C OverlappingSparseMatVecMul clean
 	make -C OverlappingZeroing clean
+	make -C MaliciousAttack clean

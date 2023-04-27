@@ -114,6 +114,9 @@ int main()
   int groups = height / SIMTLanes;
   k1.blockDim.x = SIMTLanes;
   k1.gridDim.x = groups < SIMTWarps ? SIMTWarps : groups;
+  // Increase the blockDim to reduce gridDim
+  k1.blockDim.x = 256;
+  k1.gridDim.x = height / 256;
 
   // Assign parameters
   k1.num_rows = height;
@@ -124,53 +127,55 @@ int main()
   k1.x = vecIn;
   k1.y = vecOut;
 
-    // Instantiate kernel
-  SparseMatVecMul k2;
+  //   // Instantiate kernel
+  // SparseMatVecMul k2;
 
-  // One thread per row
-  k2.blockDim.x = SIMTLanes;
-  k2.gridDim.x = groups < SIMTWarps ? SIMTWarps : groups;
-
-  // Assign parameters
-  k2.num_rows = height;
-  k2.num_cols = width;
-  k2.num_cols_per_row = samplesPerRow;
-  k2.indices = indicesT;
-  k2.data = dataT;
-  k2.x = vecIn;
-  k2.y = vecOutSecond;
-
-  // int wid = isSim ? 256 : 512;
-  // int hei = isSim ? 64 : 512;
-  // // Input and output matrix data
-  // nocl_aligned int matInData[wid*hei];
-  // nocl_aligned int matOutData[wid*hei];
-
-  // // Friendly array wrappers
-  // Array2D<int> matIn(matInData, hei, wid);
-  // Array2D<int> matOut(matOutData, wid, hei);
-
-  // // Initialise inputs
-  // for (int i = 0; i < hei; i++)
-  //   for (int j = 0; j < wid; j++)
-  //     matIn[i][j] = rand15(&seed);
-
-  // // Number of loop iterations per block.  The number of iterations
-  // // times the block Y dimension must equal the block X dimension.
-  // const int itersPerBlock = 4;
-
-  // // Instantiate Tranpose
-  // Transpose<SIMTLanes> k2;
-
-  // // Set block/grid dimensions for the second kernel 
+  // // One thread per row
   // k2.blockDim.x = SIMTLanes;
-  // k2.blockDim.y = SIMTLanes / itersPerBlock;
-  // k2.gridDim.x = wid / k2.blockDim.x;
-  // k2.gridDim.y = hei / (itersPerBlock * k2.blockDim.y);
+  // k2.gridDim.x = groups < SIMTWarps ? SIMTWarps : groups;
 
   // // Assign parameters
-  // k2.in = matIn;
-  // k2.out = matOut;
+  // k2.num_rows = height;
+  // k2.num_cols = width;
+  // k2.num_cols_per_row = samplesPerRow;
+  // k2.indices = indicesT;
+  // k2.data = dataT;
+  // k2.x = vecIn;
+  // k2.y = vecOutSecond;
+
+
+
+  int wid = isSim ? 256 : 512;
+  int hei = isSim ? 64 : 512;
+  // Input and output matrix data
+  nocl_aligned int matInData[wid*hei];
+  nocl_aligned int matOutData[wid*hei];
+
+  // Friendly array wrappers
+  Array2D<int> matIn(matInData, hei, wid);
+  Array2D<int> matOut(matOutData, wid, hei);
+
+  // Initialise inputs
+  for (int i = 0; i < hei; i++)
+    for (int j = 0; j < wid; j++)
+      matIn[i][j] = rand15(&seed);
+
+  // Number of loop iterations per block.  The number of iterations
+  // times the block Y dimension must equal the block X dimension.
+  const int itersPerBlock = 4;
+
+  // Instantiate Tranpose
+  Transpose<SIMTLanes> k2;
+
+  // Set block/grid dimensions for the second kernel 
+  k2.blockDim.x = SIMTLanes;
+  k2.blockDim.y = SIMTLanes / itersPerBlock;
+  k2.gridDim.x = wid / k2.blockDim.x;
+  k2.gridDim.y = hei / (itersPerBlock * k2.blockDim.y);
+
+  // Assign parameters
+  k2.in = matIn;
+  k2.out = matOut;
 
   // Invoke kernel
   noclRunOverlappingKernelAndDumpStats(&k1, &k2);
@@ -184,15 +189,19 @@ int main()
       if (data[i] != 0) sum += data[i] * vecIn[indices[i]];
     }
     ok_first = ok_first && sum == vecOut[r];
-    ok_second = ok_second && sum == vecOutSecond[r];
+    // ok_second = ok_second && sum == vecOutSecond[r];
   }
     
-  // for (int i = 0; i < wid; i++)
-  //   for (int j = 0; j < hei; j++)
-  //   {
-  //     ok_second = ok_second && matOut[i][j] == matIn[j][i];
-      
-  //   }
+  for (int i = 0; i < wid; i++)
+    for (int j = 0; j < hei; j++)
+    {
+      ok_second = ok_second && matOut[i][j] == matIn[j][i];
+      // if (matOut[i][j] != matIn[j][i])
+      // {
+      //   // printf("matOut: %x, matIn: %x\n", matOut[i][j], matIn[j][i]);
+      //   // printf("matOut: %x, matIn: %x\n", i, j);
+      // }
+    }
   // Display result
   puts("Self test: ");
   puts(ok_first && ok_second? "PASSED" : "FAILED");

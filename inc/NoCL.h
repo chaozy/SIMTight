@@ -270,8 +270,8 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainFirst_() {
 template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
 
     pebblesSIMTPush();
-    if (pebblesHartId() >= 1024) 
-    {
+    // if (pebblesHartId() >= 1024) 
+    // {
     // Get pointer to kernel closure
     #if EnableCHERI
       void* almighty = cheri_ddc_get();
@@ -303,7 +303,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
     pebblesSIMTConverge();
     while (k.blockIdx.y < k.gridDim.y) {
       while (k.blockIdx.x < k.gridDim.x) {
-        uint32_t localBase = LOCAL_MEM_BASE +
+        uint32_t localBase = LOCAL_MEM_BASE_SECOND +
                   k.map.localBytesPerBlock * blockIdxWithinSM;
         #if EnableCHERI
           // TODO: constrain bounds
@@ -328,7 +328,7 @@ template <typename K> __attribute__ ((noinline)) void _noclSIMTMainSecond_() {
     // Issue a fence to ensure all data has reached DRAM
     pebblesFence();
     
-    }
+    // }
     // Terminate warp
     pebblesWarpTerminateSuccess();
 }
@@ -415,11 +415,13 @@ template <typename K> __attribute__ ((noinline))
     // Allocate blocks in grid X dimension
     unsigned logThreadsLeft = SIMTLogLanes + SIMTLogWarps - k->map.blockXShift;
     #if EnableOverlapping
-     logThreadsLeft = SIMTLogLanes + (SIMTLogWarps -1) - k->map.blockXShift;
+     logThreadsLeft = SIMTLogLanes + (SIMTLogWarps - 1) - k->map.blockXShift;
     #endif
      
     unsigned gridXLogBlocks = (1 << logThreadsLeft) <= k->gridDim.x
       ? logThreadsLeft : log2floor(k->gridDim.x);
+    
+
     k->map.numXBlocks = 1 << gridXLogBlocks;
     k->map.blockXMask = k->map.numXBlocks - 1;
     logThreadsLeft -= gridXLogBlocks;
@@ -538,6 +540,8 @@ template <typename K, typename Y> __attribute__ ((noinline))
      
     unsigned gridXLogBlocksFirst = (1 << logThreadsLeftFirst) <= k1->gridDim.x
       ? logThreadsLeftFirst : log2floor(k1->gridDim.x);
+    printf("gridXLogBlocks: %x, logThreadsLeft: %x\n", gridXLogBlocksFirst, logThreadsLeftFirst);
+    
     k1->map.numXBlocks = 1 << gridXLogBlocksFirst;
     k1->map.blockXMask = k1->map.numXBlocks - 1;
     logThreadsLeftFirst -= gridXLogBlocksFirst;
