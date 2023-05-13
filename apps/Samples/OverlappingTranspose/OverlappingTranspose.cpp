@@ -19,7 +19,7 @@ template <int SquareSize> struct Transpose : Kernel {
       // square[y][threadIdx.x]  = 1;
     
     __syncthreads();
-    if (pebblesHartId() == 1) pebblesSimEmit((unsigned int)*square);
+    if (pebblesHartId() == 1) pebblesSimEmit((unsigned int)square);
     // if (pebblesHartId() == 300) pebblesSimEmit((unsigned int)square);
     // Store square
     for (int y = threadIdx.y; y < blockDim.x; y += blockDim.y)
@@ -44,7 +44,7 @@ template <int SquareSize> struct TransposeSecond : Kernel {
       //square[y][threadIdx.x] = 1;
     
     __syncthreads();
-    if (pebblesHartId() == 1025) pebblesSimEmit((unsigned int)*square);
+    if (pebblesHartId() == 1025) pebblesSimEmit((unsigned int)square);
     // Store square
     for (int y = threadIdx.y; y < blockDim.x; y += blockDim.y)
       out[originX + y][originY + threadIdx.x] = square[threadIdx.x][y];
@@ -62,8 +62,10 @@ int main()
   #endif
 
   // Matrix size for benchmarking
-  int width = isSim ? 256 : 256;
-  int height = isSim ? 64 : 32;
+  int width = isSim ? 256 : 512;
+  int height = isSim ? 64 : 512;
+  width = 256;
+  height = 4;
 
   // Input and output matrix data
   nocl_aligned int matInDataFirst[width*height];
@@ -98,10 +100,12 @@ int main()
   // Set block/grid dimensions for the first kernel 
   k1.blockDim.x = SIMTLanes;
   k1.blockDim.y = SIMTLanes / itersPerBlock;
-  // k1.blockDim.x = 256;
-  // k1.blockDim.y = 4;
+  k1.blockDim.x = 256;
+  k1.blockDim.y = 4;
   k1.gridDim.x = width / k1.blockDim.x;
   k1.gridDim.y = height / (itersPerBlock * k1.blockDim.y);
+  k1.gridDim.y = 1;
+  k1.gridDim.x = 1;
 
   // Assign parameters
   k1.in = matInFirst;
@@ -143,9 +147,9 @@ int main()
   bool okFirst = true, okSecond = true;
   int cnt = 0;
 
-  for (int i = 0; i < 3; i++)
-    for (int j = 0; j < 3; j++)
-      printf("firstout: %x, secondout: %x\n", matOutFirst[i][j], matOutSecond[i][j]);
+  // for (int i = 0; i < 3; i++)
+  //   for (int j = 0; j < 3; j++)
+  //     printf("firstout: %x, secondout: %x\n", matOutFirst[i][j], matOutSecond[i][j]);
 
 
   for (int i = 0; i < width; i++)

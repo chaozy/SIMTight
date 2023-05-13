@@ -523,6 +523,9 @@ template <typename K, typename Y> __attribute__ ((noinline))
     assert(threadsUsedFirst >= availableThreads && threadsUsedFirst >= availableThreads,
       "NoCL: unused SIMT threads (more SIMT threads than CUDA threads)");
 
+    assert(threadsPerBlockFirst == threadsPerBlockFirst, 
+    "NoCL: The two kernels should have the same software threads per block (blockDim.x * blockDim.y)");
+
     // Map hardware threads to CUDA thread&block indices
     // -------------------------------------------------
 
@@ -562,6 +565,7 @@ template <typename K, typename Y> __attribute__ ((noinline))
     // Set base of shared local memory (per block)
     unsigned blocksPerSMFirst = availableThreads / threadsPerBlockFirst;
     unsigned localBytesFirst = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
+    localBytesFirst = localBytesFirst >> 1;
     k1->map.localBytesPerBlock = localBytesFirst / blocksPerSMFirst;
 
     printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
@@ -605,6 +609,7 @@ template <typename K, typename Y> __attribute__ ((noinline))
     // Set base of shared local memory (per block)
     unsigned blocksPerSMSecond = availableThreads / threadsPerBlockSecond;
     unsigned localBytesSecond = 4 << (SIMTLogSRAMBanks + SIMTLogWordsPerSRAMBank);
+    localBytesSecond = localBytesSecond >> 1;
     k2->map.localBytesPerBlock = localBytesSecond / blocksPerSMSecond;
 
 

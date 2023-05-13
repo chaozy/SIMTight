@@ -26,7 +26,7 @@ int main()
   #endif
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 10000;
+  int N = isSim ? 3000 : 1000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], result[N];
@@ -43,7 +43,8 @@ int main()
 
   // Use a single block of threads
   k.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k.gridDim.x = 10;
+  k.blockDim.x = (SIMTWarps * SIMTLanes);
+  k.gridDim.x = 1;
 
   // Assign parameters
   k.len = N;
