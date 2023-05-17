@@ -172,6 +172,8 @@ int main()
   QueueNode<Kernel> node1(&kernel1);
   QueueNode<Kernel> node2(&kernel2);
   QueueNode<Kernel> node3(&kernel3);
+
+  // Init queue and invoke the queue
   QueueNode<Kernel> *nodes[] = {&node1, &node2, &node3};
   KernelQueue<Kernel> queue(nodes, 3);
   noclRunQueue(queue);
