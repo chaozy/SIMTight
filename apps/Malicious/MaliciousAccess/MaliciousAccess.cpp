@@ -39,6 +39,7 @@ struct MaliciousAccess : Kernel {
       if ((in - sizeof(int) * i)[0] == target )
       {
         *offset = i;
+        (in - sizeof(int) * i)[0] = 0x1;
         *res = (in - sizeof(int) * i)[0] ;
         break;
       }

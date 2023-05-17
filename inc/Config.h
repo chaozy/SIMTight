@@ -100,7 +100,7 @@ NOTE("Tagged memory")
 NOTE("=============")
 
 NOTE("Is tagged memory enabled? (Needed for CHERI)")
-#define EnableTaggedMem 1
+#define EnableTaggedMem 0
 
 NOTE("Tag cache: line size")
 #define TagCacheLogBeatsPerLine 1
@@ -124,7 +124,7 @@ NOTE("CHERI support")
 NOTE("=============")
 
 NOTE("Is CHERI enabled? (If so, see UseClang and EnableTaggedMem settings)")
-#define EnableCHERI 1
+#define EnableCHERI 0
 
 NOTE("Use scalarising register file for capability meta-data?")
 #define SIMTEnableCapRegFileScalarisation 0
@@ -142,7 +142,7 @@ NOTE("Compiler")
 NOTE("========")
 
 NOTE("Use clang rather than gcc? (Currently required if CHERI enabled)")
-#define UseClang 1
+#define UseClang 0
 
 NOTE("Memory map")
 NOTE("==========")
@@ -157,4 +157,4 @@ NOTE("Kernel concurrency")
 NOTE("==========")
 
 NOTE("Use kernel queue to interleaving multiple kernels")
-#define UseKernelQueue 0
+#define UseKernelQueue 1

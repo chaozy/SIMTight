@@ -494,6 +494,7 @@ template <typename K> __attribute__ ((noinline))
       uint32_t kernelAddr = (uint32_t) k;
     #endif
     while (!pebblesSIMTCanPut()) {}
+    // printf("Kernel address in NoCL: %x\n", kernelAddr);
     pebblesSIMTSetKernel(kernelAddr);
 
     // Flush cache
@@ -514,13 +515,13 @@ template <typename K> __attribute__ ((noinline))
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
 
-    // uint64_t c1 = pebblesCycleCount();
+    uint64_t c1 = pebblesCycleCount();
 
     noclMapKernel(k);
     int ret = noclTriggerKernel(k);
 
-    // uint64_t c = pebblesCycleCount() - c1;
-    // puts("Executed: "); puthex(c >> 32); puthex(c); putchar('\n');
+    uint64_t c = pebblesCycleCount() - c1;
+    puts("Executed: "); puthex(c >> 32); puthex(c); putchar('\n');
     return ret;
   }
 

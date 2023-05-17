@@ -167,18 +167,14 @@ int main()
   noclMapKernel(&kernel1); 
   noclMapKernel(&kernel2); 
   noclMapKernel(&kernel3);
-  noclMapKernel(&kernel4);
 
   // Init the nodes and the queue 
   QueueNode<Kernel> node1(&kernel1);
   QueueNode<Kernel> node2(&kernel2);
   QueueNode<Kernel> node3(&kernel3);
-  QueueNode<Kernel> node4(&kernel4);
-  QueueNode<Kernel> *nodes[] = {&node1, &node4, &node3, &node2};
-  KernelQueue<Kernel> queue(nodes, 4);
+  QueueNode<Kernel> *nodes[] = {&node1, &node2, &node3};
+  KernelQueue<Kernel> queue(nodes, 3);
   noclRunQueue(queue);
-
-  queue.print_cycle_wait();
   #else  
   noclRunKernel(&kernel1);
   noclRunKernel(&kernel4);

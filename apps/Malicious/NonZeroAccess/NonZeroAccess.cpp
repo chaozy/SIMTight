@@ -4,7 +4,7 @@
 INLINE int readReg()
 {
   int x;
-  asm volatile("csrrw %0, 0x1, zero" : "=r"(x));
+  asm volatile("csrrw %0, 0x831, zero" : "=r"(x));
   return x;
 }
 
@@ -38,7 +38,7 @@ template <int BlockSize> struct Reduce : Kernel {
     int local = 0xdeadbeaf;
     k_stack = &local;
 
-    if (threadIdx.x == 64)  *reg = readReg();
+    // if (threadIdx.x == 64)  *reg = readReg();
 	}
 
 };
