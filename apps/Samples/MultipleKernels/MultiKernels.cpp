@@ -177,9 +177,8 @@ int main()
   noclRunQueue(queue);
   #else  
   noclRunKernel(&kernel1);
-  noclRunKernel(&kernel4);
-  noclRunKernel(&kernel3);
   noclRunKernel(&kernel2);
+  noclRunKernel(&kernel3);
   
   #endif 
   uint64_t cycles = pebblesCycleCount() - cycleCount1;
