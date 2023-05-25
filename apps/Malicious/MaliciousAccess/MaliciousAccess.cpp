@@ -67,7 +67,6 @@ int main()
     acc += r;
   }
   
-
   Reduce<SIMTWarps * SIMTLanes> k;
 	MaliciousAccess ma;
   int res_ma, offset;

@@ -4,8 +4,13 @@
 INLINE int readReg()
 {
   int x;
-  asm volatile("csrrw %0, 0x831, zero" : "=r"(x));
+  asm volatile("mv %0, x4" : "=r"(x));
   return x;
+}
+
+INLINE void writeReg()
+{
+  asm volatile("mv x4, 0xdeadbeaf");
 }
 
 // Kernel for vector summation
@@ -54,6 +59,7 @@ template <int BlockSize> struct NonZeroAccess : Kernel {
 
     // Read the shared memory
 		if (threadIdx.x == 0) *res = block[0];
+    
 
     // Read the val stored in the stack of the other kernel
     *na_stack_val = *na_stack;

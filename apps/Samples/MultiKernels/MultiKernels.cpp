@@ -122,6 +122,7 @@ int main()
   nocl_aligned int bins[256];
   for (int i = 0; i < N; i++)
     input[i] = rand15(&seed) & 0xff;
+    
   Histogram kernel3;
   kernel3.blockDim.x = SIMTLanes * SIMTWarps;
   kernel3.len = N;

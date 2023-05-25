@@ -270,7 +270,7 @@ class KernelQueue
       {
         printf("Kernel %x waited: ", i); 
         puthex(nodes[i]->cycle_wait >> 32); puthex(nodes[i]->cycle_wait); 
-        printf("   executed: ", i); 
+        printf("   executed: "); 
         puthex(nodes[i]->cycle_execute >> 32); puthex(nodes[i]->cycle_execute); 
         putchar('\n');
       }
@@ -515,9 +515,14 @@ template <typename K> __attribute__ ((noinline))
 template <typename K> __attribute__ ((noinline))
   int noclRunKernel(K* k) {
 
-    uint64_t c1 = pebblesCycleCount();
+   
 
     noclMapKernel(k);
+    
+    // uint64_t c2 = pebblesCycleCount() - c1;
+    // puts("Waited: "); puthex(c2 >> 32); puthex(c2); putchar('\n');
+     uint64_t c1 = pebblesCycleCount();
+
     int ret = noclTriggerKernel(k);
 
     uint64_t c = pebblesCycleCount() - c1;
