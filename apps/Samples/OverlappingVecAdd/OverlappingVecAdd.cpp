@@ -18,13 +18,13 @@ int main()
   // Are we in simulation?
   bool isSim = getchar();
 
-  #if !EnableOverlapping
-  puts("Overlapping is not enabled!\n");
-  return 1;
-  #endif
+  // #if !EnableOverlapping
+  // puts("Overlapping is not enabled!\n");
+  // return 1;
+  // #endif
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 1000;
+  int N = isSim ? 3000 : 10000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], resultFirst[N], resultSecond[N];
@@ -39,7 +39,7 @@ int main()
   // Instantiate the first kernel 
   VecAdd k1;
   k1.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k1.gridDim.x = 1;
+  k1.gridDim.x = 10;
   k1.len = N;
   k1.a = a;
   k1.b = b;
@@ -48,14 +48,22 @@ int main()
   // Instantiate the first kernel 
   VecAdd k2;
   k2.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k2.gridDim.x = 1;
+  k2.gridDim.x = 10;
   k2.len = N;
   k2.a = a;
   k2.b = b;
   k2.result = resultSecond;
 
   // Invoke kernel
-  noclRunOverlappingKernelAndDumpStats(&k1, &k2);
+  uint64_t cycle1 = pebblesCycleCount();
+  #if EnableOverlapping
+  noclRunOverlappingKernel(&k1, &k2);
+  #else
+  noclRunKernel(&k1);
+  noclRunKernel(&k2);
+  #endif
+  uint64_t cycle2 = pebblesCycleCount() - cycle1;
+  puts("Cycle count: "); puthex(cycle2 >> 32); puthex(cycle2); putchar('\n');
 
   // Check result
   bool okFirst = true, okSecond = true;

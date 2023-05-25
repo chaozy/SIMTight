@@ -44,10 +44,10 @@ int main()
   // Are we in simulation?
   bool isSim = getchar();
 
-  #if !EnableOverlapping
-  puts("Overlapping is not enabled!\n");
-  return 1;
-  #endif
+  // #if !EnableOverlapping
+  // puts("Overlapping is not enabled!\n");
+  // return 1;
+  // #endif
 
   // Matrix size for benchmarking
   int width = isSim ? 256 : 512;
@@ -105,7 +105,15 @@ int main()
   k2.out = matOut;
 
   // Invoke kernel
-  noclRunOverlappingKernelAndDumpStats(&k1, &k2);
+  uint64_t cycle1 = pebblesCycleCount();
+  #if EnableOverlapping
+  noclRunOverlappingKernel(&k1, &k2);
+  #else
+  noclRunKernel(&k1);
+  noclRunKernel(&k2);
+  #endif
+  uint64_t cycle2 = pebblesCycleCount() - cycle1;
+  puts("Cycle count: "); puthex(cycle2 >> 32); puthex(cycle2); putchar('\n');
 
   // Check result
   bool ok_first = true, ok_second = true;

@@ -21,3 +21,4 @@ clean:
 	make -C OverlappingSparseMatVecMul clean
 	make -C OverlappingZeroing clean
 	make -C MaliciousAttack clean
+	make -C OverlappingReduce clean

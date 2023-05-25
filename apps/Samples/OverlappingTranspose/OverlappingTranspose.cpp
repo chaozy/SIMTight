@@ -56,16 +56,14 @@ int main()
   // Are we in simulation?
   bool isSim = getchar();
 
-  #if !EnableOverlapping
-  puts("Overlapping is not enabled!\n");
-  return 1;
-  #endif
+  // #if !EnableOverlapping
+  // puts("Overlapping is not enabled!\n");
+  // return 1;
+  // #endif
 
   // Matrix size for benchmarking
   int width = isSim ? 256 : 512;
   int height = isSim ? 64 : 512;
-  width = 256;
-  height = 4;
 
   // Input and output matrix data
   nocl_aligned int matInDataFirst[width*height];
@@ -100,12 +98,8 @@ int main()
   // Set block/grid dimensions for the first kernel 
   k1.blockDim.x = SIMTLanes;
   k1.blockDim.y = SIMTLanes / itersPerBlock;
-  k1.blockDim.x = 256;
-  k1.blockDim.y = 4;
   k1.gridDim.x = width / k1.blockDim.x;
   k1.gridDim.y = height / (itersPerBlock * k1.blockDim.y);
-  k1.gridDim.y = 1;
-  k1.gridDim.x = 1;
 
   // Assign parameters
   k1.in = matInFirst;
@@ -120,8 +114,6 @@ int main()
   // Set block/grid dimensions for the second kernel 
   k2.blockDim.x = SIMTLanes;
   k2.blockDim.y = SIMTLanes / itersPerBlock;
-  // k2.blockDim.x = 256;
-  // k2.blockDim.y = 16 / itersPerBlock;
   k2.gridDim.x = width / k2.blockDim.x;
   k2.gridDim.y = height / (itersPerBlock * k2.blockDim.y);
 
@@ -141,7 +133,15 @@ int main()
 //       printf("first: %x, firstout: %x\n", matInFirst[i][j],matInSecond[i][j]);
 //     }
   // Invoke kernel
-  noclRunOverlappingKernelAndDumpStats(&k1, &k2);
+  uint64_t cycle1 = pebblesCycleCount();
+  #if EnableOverlapping
+  noclRunOverlappingKernel(&k1, &k2);
+  #else
+  noclRunKernel(&k1);
+  noclRunKernel(&k2);
+  #endif
+  uint64_t cycle2 = pebblesCycleCount() - cycle1;
+  puts("Cycle count: "); puthex(cycle2 >> 32); puthex(cycle2); putchar('\n');
 
   // Check result
   bool okFirst = true, okSecond = true;
