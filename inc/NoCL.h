@@ -397,8 +397,8 @@ template <typename K> __attribute__ ((noinline))
     #else
     assert(threadsPerBlock <= SIMTWarps * SIMTLanes,
       "NoCL: block size is too large (exceeds SIMT thread count)");
-    assert(threadsUsed >= SIMTWarps * SIMTLanes,
-      "NoCL: unused SIMT threads (more SIMT threads than CUDA threads)");
+    // assert(threadsUsed >= SIMTWarps * SIMTLanes,
+    //   "NoCL: unused SIMT threads (more SIMT threads than CUDA threads)");
     #endif
 
 
@@ -449,12 +449,12 @@ template <typename K> __attribute__ ((noinline))
     // localBytes = localBytes >> 1;
     k->map.localBytesPerBlock = localBytes / blocksPerSM;
 
-    printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
-                      k->map.threadXMask, k->map.blockXMask, k->map.blockYMask);
+    // printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
+    //                   k->map.threadXMask, k->map.blockXMask, k->map.blockYMask);
 
-    printf("blockXShift: %x, numXBlocks: %x, numYBlocks: %x\n", 
-                      k->map.blockXShift, k->map.numXBlocks, k->map.numYBlocks);
-    puts("\n");
+    // printf("blockXShift: %x, numXBlocks: %x, numYBlocks: %x\n", 
+    //                   k->map.blockXShift, k->map.numXBlocks, k->map.numYBlocks);
+    // puts("\n");
 
     // End of mapping
     // --------------
@@ -543,7 +543,7 @@ template <typename K, typename Y> __attribute__ ((noinline))
      
     unsigned gridXLogBlocksFirst = (1 << logThreadsLeftFirst) <= k1->gridDim.x
       ? logThreadsLeftFirst : log2floor(k1->gridDim.x);
-    printf("gridXLogBlocks: %x, logThreadsLeft: %x\n", gridXLogBlocksFirst, logThreadsLeftFirst);
+    // printf("gridXLogBlocks: %x, logThreadsLeft: %x\n", gridXLogBlocksFirst, logThreadsLeftFirst);
     
     k1->map.numXBlocks = 1 << gridXLogBlocksFirst;
     k1->map.blockXMask = k1->map.numXBlocks - 1;
@@ -568,12 +568,12 @@ template <typename K, typename Y> __attribute__ ((noinline))
     localBytesFirst = localBytesFirst >> 1;
     k1->map.localBytesPerBlock = localBytesFirst / blocksPerSMFirst;
 
-    printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
-                      k1->map.threadXMask, k1->map.blockXMask, k1->map.blockYMask);
+    // printf("threadXMask: %x, blockXMask: %x, blockYMask: %x\n", 
+    //                   k1->map.threadXMask, k1->map.blockXMask, k1->map.blockYMask);
 
-    printf("blockXShift: %x, numXBlocks: %x, numYBlocks: %x\n", 
-                      k1->map.blockXShift, k1->map.numXBlocks, k1->map.numYBlocks);
-    puts("\n");
+    // printf("blockXShift: %x, numXBlocks: %x, numYBlocks: %x\n", 
+    //                   k1->map.blockXShift, k1->map.numXBlocks, k1->map.numYBlocks);
+    // puts("\n");
     
     // Mapping of the second kernel
 

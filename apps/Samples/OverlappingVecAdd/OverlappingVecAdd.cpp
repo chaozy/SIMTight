@@ -24,7 +24,7 @@ int main()
   // #endif
 
   // Vector size for benchmarking
-  int N = isSim ? 3000 : 10000;
+  int N = isSim ? 3000 : 1000;
 
   // Input and output vectors
   simt_aligned int a[N], b[N], resultFirst[N], resultSecond[N];
@@ -39,7 +39,7 @@ int main()
   // Instantiate the first kernel 
   VecAdd k1;
   k1.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k1.gridDim.x = 10;
+  k1.gridDim.x = 1;
   k1.len = N;
   k1.a = a;
   k1.b = b;
@@ -48,7 +48,7 @@ int main()
   // Instantiate the first kernel 
   VecAdd k2;
   k2.blockDim.x = (SIMTWarps * SIMTLanes) >> 1;
-  k2.gridDim.x = 10;
+  k2.gridDim.x = 1;
   k2.len = N;
   k2.a = a;
   k2.b = b;

@@ -56,7 +56,7 @@ int main()
 
   // Use a single block of threads
   k1.blockDim.x = SIMTWarps * SIMTLanes / 2;
-  k1.gridDim.x = 1000;
+  k1.gridDim.x = 10;
   // Assign parameters
   k1.len = N;
   k1.in = inFirst;
@@ -67,7 +67,7 @@ int main()
 
   // Use a single block of threads
   k2.blockDim.x = SIMTWarps * SIMTLanes / 2;
-  k2.gridDim.x = 1000;
+  k2.gridDim.x = 10;
 
   // Assign parameters
   k2.len = N;
